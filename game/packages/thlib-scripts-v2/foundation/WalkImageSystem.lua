@@ -497,7 +497,7 @@ end
 ---@return number, number
 ---@private
 local function getRotatedPosition(cx, cy, dx, dy, angle)
-    local rad = angle * pi / 180
+    local rad = math.rad(angle)
     local cosA = math.cos(rad)
     local sinA = math.sin(rad)
     local x = dx * cosA - dy * sinA + cx
