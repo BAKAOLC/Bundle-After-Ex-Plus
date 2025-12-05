@@ -140,51 +140,45 @@ function M:setupDefaultStates(options)
     end
 
     -- 静止状态（面向左）
-    sm:registerState("idle_left", {
+    self.walkSystem:registerAnimationState("idle_left", nil, true, {
         onEnter = function(ctx)
-            ctx.owner:playAnimation("idle_left")
             ctx.facing = "left"
-            -- 如果不是从 idle 状态进入的，重置漂浮计时器
             if not ctx.isInIdle then
                 ctx.floatTimer = 0
             end
             ctx.isInIdle = true
         end,
         onUpdate = function(ctx, dt)
-            ctx.owner:updateAnimation(dt)
             updateFloating(ctx, dt, true)
         end
     })
 
     -- 静止状态（面向右）
-    sm:registerState("idle_right", {
+    self.walkSystem:registerAnimationState("idle_right", nil, true, {
         onEnter = function(ctx)
-            ctx.owner:playAnimation("idle_right")
             ctx.facing = "right"
-            -- 如果不是从 idle 状态进入的，重置漂浮计时器
             if not ctx.isInIdle then
                 ctx.floatTimer = 0
             end
             ctx.isInIdle = true
         end,
         onUpdate = function(ctx, dt)
-            ctx.owner:updateAnimation(dt)
             updateFloating(ctx, dt, true)
         end
     })
 
     -- 左移动进入
-    sm:registerState("move_left_enter", {
+    self.walkSystem:registerAnimationState("move_left_enter", nil, true, {
         onEnter = function(ctx)
             ctx.isInIdle = false
-            if ctx.owner:playAnimation("move_left_enter") then
-                ctx.moveEntering = true
-            else
+            -- 检查动画是否存在，不存在则直接进入循环
+            if not ctx.owner.animations["move_left_enter"] then
                 ctx.owner.stateMachine:setState("move_left_loop")
+            else
+                ctx.moveEntering = true
             end
         end,
         onUpdate = function(ctx, dt)
-            ctx.owner:updateAnimation(dt)
             updateFloating(ctx, dt, false)
         end,
         onExit = function(ctx)
@@ -193,28 +187,26 @@ function M:setupDefaultStates(options)
     })
 
     -- 左移动循环
-    sm:registerState("move_left_loop", {
+    self.walkSystem:registerAnimationState("move_left_loop", nil, true, {
         onEnter = function(ctx)
-            ctx.owner:playAnimation("move_left_loop")
             ctx.facing = "left"
         end,
         onUpdate = function(ctx, dt)
-            ctx.owner:updateAnimation(dt)
             updateFloating(ctx, dt, false)
         end
     })
 
     -- 左移动退出
-    sm:registerState("move_left_exit", {
+    self.walkSystem:registerAnimationState("move_left_exit", nil, true, {
         onEnter = function(ctx)
-            if ctx.owner:playAnimation("move_left_exit") then
-                ctx.moveExiting = true
-            else
+            -- 检查动画是否存在，不存在则直接回到静止
+            if not ctx.owner.animations["move_left_exit"] then
                 ctx.owner.stateMachine:setState("idle_left")
+            else
+                ctx.moveExiting = true
             end
         end,
         onUpdate = function(ctx, dt)
-            ctx.owner:updateAnimation(dt)
             updateFloating(ctx, dt, false)
         end,
         onExit = function(ctx)
@@ -223,17 +215,17 @@ function M:setupDefaultStates(options)
     })
 
     -- 右移动进入
-    sm:registerState("move_right_enter", {
+    self.walkSystem:registerAnimationState("move_right_enter", nil, true, {
         onEnter = function(ctx)
             ctx.isInIdle = false
-            if ctx.owner:playAnimation("move_right_enter") then
-                ctx.moveEntering = true
-            else
+            -- 检查动画是否存在，不存在则直接进入循环
+            if not ctx.owner.animations["move_right_enter"] then
                 ctx.owner.stateMachine:setState("move_right_loop")
+            else
+                ctx.moveEntering = true
             end
         end,
         onUpdate = function(ctx, dt)
-            ctx.owner:updateAnimation(dt)
             updateFloating(ctx, dt, false)
         end,
         onExit = function(ctx)
@@ -242,28 +234,26 @@ function M:setupDefaultStates(options)
     })
 
     -- 右移动循环
-    sm:registerState("move_right_loop", {
+    self.walkSystem:registerAnimationState("move_right_loop", nil, true, {
         onEnter = function(ctx)
-            ctx.owner:playAnimation("move_right_loop")
             ctx.facing = "right"
         end,
         onUpdate = function(ctx, dt)
-            ctx.owner:updateAnimation(dt)
             updateFloating(ctx, dt, false)
         end
     })
 
     -- 右移动退出
-    sm:registerState("move_right_exit", {
+    self.walkSystem:registerAnimationState("move_right_exit", nil, true, {
         onEnter = function(ctx)
-            if ctx.owner:playAnimation("move_right_exit") then
-                ctx.moveExiting = true
-            else
+            -- 检查动画是否存在，不存在则直接回到静止
+            if not ctx.owner.animations["move_right_exit"] then
                 ctx.owner.stateMachine:setState("idle_right")
+            else
+                ctx.moveExiting = true
             end
         end,
         onUpdate = function(ctx, dt)
-            ctx.owner:updateAnimation(dt)
             updateFloating(ctx, dt, false)
         end,
         onExit = function(ctx)

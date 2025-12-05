@@ -440,6 +440,51 @@ function M:registerState(name, callbacks)
     return self.stateMachine:registerState(name, callbacks)
 end
 
+---注册动画状态（自动处理动画播放和更新）
+---@param stateName string @状态名称
+---@param animationName string|nil @动画名称（如果为 nil 则使用状态名）
+---@param autoUpdate boolean|nil @是否自动更新动画（默认 true）
+---@param callbacks table|nil @可选的额外回调 {onEnter, onExit, onUpdate}
+---@return number @状态ID
+function M:registerAnimationState(stateName, animationName, autoUpdate, callbacks)
+    animationName = animationName or stateName
+    autoUpdate = autoUpdate ~= false  -- 默认为 true
+    callbacks = callbacks or {}
+
+    local userOnEnter = callbacks.onEnter
+    local userOnExit = callbacks.onExit
+    local userOnUpdate = callbacks.onUpdate
+
+    local stateCallbacks = {
+        onEnter = function(ctx)
+            -- 自动播放动画
+            ctx.owner:playAnimation(animationName)
+            -- 调用用户自定义的 onEnter
+            if userOnEnter then
+                userOnEnter(ctx)
+            end
+        end,
+
+        onExit = userOnExit,
+    }
+
+    -- 只在启用自动更新时添加 onUpdate
+    if autoUpdate or userOnUpdate then
+        stateCallbacks.onUpdate = function(ctx, dt)
+            -- 自动更新动画（如果启用）
+            if autoUpdate then
+                ctx.owner:updateAnimation(dt)
+            end
+            -- 调用用户自定义的 onUpdate
+            if userOnUpdate then
+                userOnUpdate(ctx, dt)
+            end
+        end
+    end
+
+    return self.stateMachine:registerState(stateName, stateCallbacks)
+end
+
 ---获取旋转后的坐标
 ---@param cx number @中心 X
 ---@param cy number @中心 Y
