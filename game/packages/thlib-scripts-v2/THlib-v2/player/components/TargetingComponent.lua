@@ -1,6 +1,4 @@
 ---目标锁定组件
-local abs = math.abs
-
 ---@class THlib.Player.TargetingComponent : foundation.Component
 ---@field customFunc function|nil
 ---@field inputComp THlib.Player.InputComponent|nil
@@ -43,34 +41,9 @@ local function create(owner, config)
             return
         end
 
-        player.target = nil
-        local maxPri = -1
-        local px = player.x
-        local py = player.y
-
-        for _, o in ObjList(GROUP_ENEMY) do
-            if o.colli then
-                local dx = px - o.x
-                local dy = py - o.y
-                local pri = abs(dy) / (abs(dx) + 0.01)
-                if pri > maxPri then
-                    maxPri = pri
-                    player.target = o
-                end
-            end
-        end
-
-        for _, o in ObjList(GROUP_NONTJT) do
-            if o.colli then
-                local dx = px - o.x
-                local dy = py - o.y
-                local pri = abs(dy) / (abs(dx) + 0.01)
-                if pri > maxPri then
-                    maxPri = pri
-                    player.target = o
-                end
-            end
-        end
+        -- 使用 Player 的 findTargets 方法来查找目标
+        local targets = player:findTargets(1)
+        player.target = targets[1] or nil
     end
 
     return component
