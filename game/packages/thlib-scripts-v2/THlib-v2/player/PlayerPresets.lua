@@ -12,8 +12,6 @@ function Presets.default()
             enableDeathSpell = true,
             deathSpellDuration = 10,
             deathAnimationDuration = 90,
-            respawnMode = "bottom",
-            respawnDuration = 60,
         },
 
         -- 输入组件（默认启用，无需配置）
@@ -73,7 +71,12 @@ function Presets.default()
         -- 复活组件配置
         respawn = {
             respawnX = 0,
-            respawnY = -176,
+            respawnY = -236, -- 重生起始位置
+            targetX = 0, -- 重生动画结束后的目标X坐标
+            targetY = -192, -- 重生动画结束后的目标Y坐标
+            respawnMode = "fadeIn", -- fadeIn/instant
+            respawnDuration = 60, -- 重生动画时长
+            protectDuration = 120, -- 重生后无敌时间
         },
 
         -- 死亡动画配置
@@ -84,6 +87,8 @@ function Presets.default()
         -- 道具收集配置
         itemCollection = {
             collectLine = 96,
+            slowRange = 48, -- 低速时的收集范围
+            normalRange = 24, -- 高速时的收集范围
         },
 
         -- 目标锁定（默认启用，无需配置）
