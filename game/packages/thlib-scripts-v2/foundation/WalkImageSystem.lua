@@ -1,8 +1,7 @@
 local type = type
 local setmetatable = setmetatable
 local ipairs = ipairs
-local cos = cos or math.cos
-local sin = sin or math.sin
+local math = math
 local pi = math.pi
 
 local StateMachine = require("foundation.StateMachine")
@@ -59,6 +58,10 @@ function M:initialize(obj, texture)
     -- 渲染属性
     self.blend = ""
     self.color = Color(0xFFFFFFFF)
+
+    -- 颜色调制层（支持多层混合）
+    -- 每层是一个 {r, g, b, a} 表，最终会相乘
+    self.colorScales = {}
 
     -- 创建状态机
     self.stateMachine = StateMachine.new()
@@ -495,8 +498,8 @@ end
 ---@private
 local function getRotatedPosition(cx, cy, dx, dy, angle)
     local rad = angle * pi / 180
-    local cosA = cos(rad)
-    local sinA = sin(rad)
+    local cosA = math.cos(rad)
+    local sinA = math.sin(rad)
     local x = dx * cosA - dy * sinA + cx
     local y = dx * sinA + dy * cosA + cy
     return x, y
@@ -511,9 +514,7 @@ function M:update(deltaTime)
 end
 
 ---渲染
----@param damageTime number|nil @受击时间
----@param damageTimeMax number|nil @受击最大时间
-function M:render(damageTime, damageTimeMax)
+function M:render()
     if not self.currentFrame then
         return
     end
@@ -528,12 +529,6 @@ function M:render(damageTime, damageTimeMax)
         return
     end
 
-    -- 计算受击效果
-    local damageRatio = 0
-    if damageTime and damageTimeMax and damageTimeMax > 0 then
-        damageRatio = damageTime / damageTimeMax
-    end
-
     -- 获取颜色
     local blend = self.blend
     local color = self.color
@@ -542,15 +537,20 @@ function M:render(damageTime, damageTimeMax)
     if obj._blend and obj._a and obj._r and obj._g and obj._b then
         blend = obj._blend
         local a, r, g, b = obj._a, obj._r, obj._g, obj._b
-        if damageRatio > 0 then
-            r = r - r * damageRatio
-            g = g - g * damageRatio
-        end
         color = Color(a, r, g, b)
-    elseif damageRatio > 0 then
+    end
+
+    -- 应用颜色调制（多层相乘）
+    if #self.colorScales > 0 then
         local a, r, g, b = color:ARGB()
-        r = r - r * damageRatio
-        g = g - g * damageRatio
+        for i = 1, #self.colorScales do
+            local scale = self.colorScales[i]
+            -- 每次运算后限制在 0~255 范围
+            a = math.max(0, math.min(255, a * scale.a))
+            r = math.max(0, math.min(255, r * scale.r))
+            g = math.max(0, math.min(255, g * scale.g))
+            b = math.max(0, math.min(255, b * scale.b))
+        end
         color = Color(a, r, g, b)
     end
 
@@ -620,6 +620,42 @@ end
 ---@return any
 function M:getContext(key)
     return self.stateMachine:getContext(key)
+end
+
+---添加颜色调制层
+---@param id string @调制层 ID
+---@param r number @红色比例 (0~1)
+---@param g number @绿色比例 (0~1)
+---@param b number @蓝色比例 (0~1)
+---@param a number|nil @透明度比例 (0~1)，默认 1.0
+function M:addColorScale(id, r, g, b, a)
+    a = a or 1.0
+    -- 先移除已存在的同 ID 调制层
+    self:removeColorScale(id)
+    -- 添加新的调制层
+    local scale = {
+        id = id,
+        r = r,
+        g = g,
+        b = b,
+        a = a,
+    }
+    self.colorScales[#self.colorScales + 1] = scale
+end
+
+---移除颜色调制层
+---@param id string @调制层 ID
+function M:removeColorScale(id)
+    for i = #self.colorScales, 1, -1 do
+        if self.colorScales[i].id == id then
+            table.remove(self.colorScales, i)
+        end
+    end
+end
+
+---清除所有颜色调制层
+function M:clearColorScales()
+    self.colorScales = {}
 end
 
 ---创建一个新的行走图系统实例

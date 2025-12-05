@@ -852,7 +852,22 @@ end
 ---@param damageTime number|nil @受击时间
 ---@param damageTimeMax number|nil @受击最大时间
 function M:render(damageTime, damageTimeMax)
-    self.walkSystem:render(damageTime, damageTimeMax)
+    -- 处理受击效果
+    if damageTime and damageTimeMax and damageTimeMax > 0 then
+        local damageRatio = damageTime / damageTimeMax
+        if damageRatio > 0 then
+            -- 红绿通道按比例减少
+            local scale = 1 - damageRatio * 0.75
+            self.walkSystem:addColorScale("damage", scale, scale, 1, 1)
+        else
+            self.walkSystem:removeColorScale("damage")
+        end
+    else
+        self.walkSystem:removeColorScale("damage")
+    end
+
+    -- 渲染行走图
+    self.walkSystem:render()
 end
 
 ---获取当前状态名称
