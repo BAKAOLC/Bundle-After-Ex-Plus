@@ -52,16 +52,6 @@ local function createPlayerStateMachine(player)
         end,
     })
 
-    -- 无敌保护状态
-    local STATE_PROTECTED = sm:registerState("protected", {
-        onEnter = function(ctx)
-            ctx.player:_dispatchEvent("onStateEnter_protected")
-        end,
-        onExit = function(ctx)
-            ctx.player:_dispatchEvent("onStateExit_protected")
-        end,
-    })
-
     -- 添加状态转换（由组件通过设置标志来触发）
 
     -- 正常 -> 决死
@@ -89,13 +79,8 @@ local function createPlayerStateMachine(player)
         return ctx.player.__requestState == "respawning"
     end)
 
-    -- 重生 -> 保护
-    sm:addTransition(STATE_RESPAWNING, STATE_PROTECTED, function(ctx)
-        return ctx.player.__requestState == "protected"
-    end)
-
-    -- 保护 -> 正常
-    sm:addTransition(STATE_PROTECTED, STATE_NORMAL, function(ctx)
+    -- 重生 -> 正常
+    sm:addTransition(STATE_RESPAWNING, STATE_NORMAL, function(ctx)
         return ctx.player.__requestState == "normal"
     end)
 

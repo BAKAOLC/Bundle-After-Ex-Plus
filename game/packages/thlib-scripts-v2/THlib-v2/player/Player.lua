@@ -308,6 +308,7 @@ end
 
 ---Kill回调
 function Player:kill()
+    print("Player killed!")
     PreserveObject(self)
     self:_dispatchEvent("onKill")
 end

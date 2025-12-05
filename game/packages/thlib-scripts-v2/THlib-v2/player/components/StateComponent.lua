@@ -7,6 +7,7 @@ local PlayerState = require("THlib-v2.player.PlayerState")
 ---@field currentState string
 ---@field stateTimers table<string, number>
 ---@field config table
+---@field respawnComp THlib.Player.RespawnComponent|nil
 
 ---创建状态机组件
 ---@param owner THlib.Player
@@ -24,6 +25,7 @@ local function create(owner, config)
         stateMachine = nil,
         currentState = "normal",
         stateTimers = {},
+        respawnComp = nil,
         config = {
             -- 决死相关
             enableDeathSpell = config.enableDeathSpell ~= false,
@@ -31,18 +33,21 @@ local function create(owner, config)
 
             -- 死亡动画相关
             deathAnimationDuration = config.deathAnimationDuration or 90,
-
-            -- 重生相关
-            respawnMode = config.respawnMode or "bottom",
-            respawnDuration = config.respawnDuration or 60,
         },
     }
+
+    function component:resolveDependencies(gameObject)
+        self.respawnComp = gameObject:getComponent("respawn")
+    end
 
     function component:onAdd()
         local player = self.owner
 
         -- 创建状态机
         self.stateMachine = PlayerState.createPlayerStateMachine(player)
+
+        local view = require("lib.debug.StateMachineView")
+        view:addWatch(self.stateMachine, "player_state_machine")
 
         -- 监听状态进入事件
         player:registerEvent("onStateEnter_normal", "state_normal", 10, function(p)
@@ -68,11 +73,6 @@ local function create(owner, config)
             self.stateTimers[self.currentState] = 0
         end)
 
-        player:registerEvent("onStateEnter_protected", "state_protected", 10, function(p)
-            self.currentState = "protected"
-            self.stateTimers[self.currentState] = 0
-        end)
-
         -- 监听Kill事件来触发状态转换
         player:registerEvent("onKill", "state_killHandler", 5, function(p)
             component.handleHit(component)
@@ -85,7 +85,6 @@ local function create(owner, config)
         player:unregisterEvent("onStateEnter_deathSpell", "state_deathSpell")
         player:unregisterEvent("onStateEnter_dying", "state_dying")
         player:unregisterEvent("onStateEnter_respawning", "state_respawning")
-        player:unregisterEvent("onStateEnter_protected", "state_protected")
         player:unregisterEvent("onKill", "state_killHandler")
     end
 
@@ -129,16 +128,18 @@ local function create(owner, config)
                 component.requestTransition(component, "respawning")
             end
         elseif self.currentState == "respawning" then
-            -- 重生完成
-            local duration = self.config.respawnDuration
-            if self.config.respawnMode == "instant" then
-                duration = 1
+            -- 重生完成，使用 RespawnComponent 的配置
+            local duration = 60 -- 默认值
+            if self.respawnComp then
+                duration = self.respawnComp.respawnDuration
+                if self.respawnComp.respawnMode == "instant" then
+                    duration = 1
+                end
             end
             if timer >= duration then
-                component.requestTransition(component, "protected")
+                component.requestTransition(component, "normal")
             end
         end
-        -- protected -> normal 由ProtectComponent处理
     end
 
     function component:requestTransition(state)

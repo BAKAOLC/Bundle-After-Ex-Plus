@@ -22,14 +22,14 @@ local function create(owner, config)
 
     function component:onAdd()
         local player = self.owner
-        player:registerEvent("onStateChange_dying", "deathAnimation", 10, function(p)
+        player:registerEvent("onStateEnter_dying", "deathAnimation", 10, function(p)
             self:playAnimation(p)
         end)
     end
 
     function component:onRemove()
         local player = self.owner
-        player:unregisterEvent("onStateChange_dying", "deathAnimation")
+        player:unregisterEvent("onStateEnter_dying", "deathAnimation")
     end
 
     function component:playAnimation(player)

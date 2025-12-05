@@ -4,10 +4,14 @@
 ---@class THlib.Player.RespawnComponent : foundation.Component
 ---@field respawnX number
 ---@field respawnY number
+---@field targetX number
+---@field targetY number
 ---@field respawnMode string
+---@field respawnDuration number
 ---@field protectDuration number
 ---@field onRespawn function|nil
 ---@field protectComp THlib.Player.ProtectComponent|nil
+---@field stateComp THlib.Player.StateComponent|nil
 
 ---创建复活组件
 ---@param owner THlib.Player
@@ -24,29 +28,33 @@ local function create(owner, config)
         owner = owner,
         -- 组件自己的配置
         respawnX = config.respawnX or 0,
-        respawnY = config.respawnY or -176,
-        respawnMode = config.respawnMode or "bottom", -- bottom/instant/fadeIn
+        respawnY = config.respawnY or -236,  -- 参考旧代码：从 -236 开始
+        targetX = config.targetX or 0,       -- 重生动画结束后的目标X坐标
+        targetY = config.targetY or -192,    -- 参考旧代码：飞到 -192
+        respawnMode = config.respawnMode or "fadeIn", -- fadeIn/instant
+        respawnDuration = config.respawnDuration or 60, -- 重生动画时长
         protectDuration = config.protectDuration or 120,
         onRespawn = config.onRespawn,
+        stateComp = nil,
     }
 
     function component:onAdd()
         local player = self.owner
 
         -- 监听重生状态事件
-        player:registerEvent("onStateChange_respawning", "respawnHandler", 10, function(p)
+        player:registerEvent("onStateEnter_respawning", "respawnHandler", 10, function(p)
             self:handleRespawn(p)
         end)
     end
 
     function component:onRemove()
         local player = self.owner
-        player:unregisterEvent("onStateChange_respawning", "respawnHandler")
+        player:unregisterEvent("onStateEnter_respawning", "respawnHandler")
     end
 
     function component:resolveDependencies(gameObject)
-        local protectComp = gameObject:getComponent("protect")
-        self.protectComp = protectComp
+        self.protectComp = gameObject:getComponent("protect")
+        self.stateComp = gameObject:getComponent("state")
     end
 
     function component:handleRespawn(player)
@@ -62,6 +70,9 @@ local function create(owner, config)
         -- 清除弹幕
         New(bullet_deleter, player.x, player.y)
 
+        -- 显示玩家
+        player.hide = false
+
         -- 回调
         if self.onRespawn then
             self.onRespawn(player)
@@ -71,11 +82,12 @@ local function create(owner, config)
     function component:update()
         local player = self.owner
 
-        -- 处理从下方飞入的动画
-        if player.__currentState == "respawning" and self.respawnMode == "bottom" then
-            local targetY = 0
-            local progress = math.min((player.__respawnTimer or 0) / 60, 1)
-            player.y = self.respawnY + (targetY - self.respawnY) * progress
+        -- 处理渐入动画
+        if self.stateComp and self.stateComp.currentState == "respawning" and self.respawnMode == "fadeIn" then
+            local timer = self.stateComp:getStateTimer()
+            local progress = math.min(timer / self.respawnDuration, 1)
+            player.x = self.respawnX + (self.targetX - self.respawnX) * progress
+            player.y = self.respawnY + (self.targetY - self.respawnY) * progress
         end
     end
 
