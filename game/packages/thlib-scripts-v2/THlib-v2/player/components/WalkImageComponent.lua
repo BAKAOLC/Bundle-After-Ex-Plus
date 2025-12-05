@@ -37,9 +37,6 @@ local function create(owner, config)
         -- 创建行走图系统
         self.walkSystem = WalkImageSystem.new(player, config.texture)
 
-        local view = require("lib.debug.StateMachineView")
-        view:addWatch(self.walkSystem.stateMachine)
-
         -- 注册图像帧（由具体玩家实现自定义）
         if config.registerFrames then
             config.registerFrames(self.walkSystem)

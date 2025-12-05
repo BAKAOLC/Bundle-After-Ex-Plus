@@ -46,9 +46,6 @@ local function create(owner, config)
         -- 创建状态机
         self.stateMachine = PlayerState.createPlayerStateMachine(player)
 
-        local view = require("lib.debug.StateMachineView")
-        view:addWatch(self.stateMachine, "player_state_machine")
-
         -- 监听状态进入事件
         player:registerEvent("onStateEnter_normal", "state_normal", 10, function(p)
             self.currentState = "normal"
