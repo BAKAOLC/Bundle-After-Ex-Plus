@@ -1,8 +1,11 @@
 local type = type
 local setmetatable = setmetatable
 local ipairs = ipairs
+local tostring = tostring
 local math = math
-local pi = math.pi
+local table = table
+local string = string
+local print = print
 
 local StateMachine = require("foundation.StateMachine")
 
@@ -217,7 +220,7 @@ function M:registerAnimation(name, frameData, interval, loop)
     local frameIndex = 1
     local defaultDuration = interval or 8
 
-    for i, data in ipairs(frameData) do
+    for _, data in ipairs(frameData) do
         local frameId, dx, dy, hscale, vscale, rot, duration
 
         if type(data) == "table" then
@@ -545,12 +548,16 @@ function M:render()
         local a, r, g, b = color:ARGB()
         for i = 1, #self.colorScales do
             local scale = self.colorScales[i]
-            -- 每次运算后限制在 0~255 范围
-            a = math.max(0, math.min(255, a * scale.a))
-            r = math.max(0, math.min(255, r * scale.r))
-            g = math.max(0, math.min(255, g * scale.g))
-            b = math.max(0, math.min(255, b * scale.b))
+            a = a * scale.a
+            r = r * scale.r
+            g = g * scale.g
+            b = b * scale.b
         end
+        -- 运算完后限制
+        a = math.max(0, math.min(255, a))
+        r = math.max(0, math.min(255, r))
+        g = math.max(0, math.min(255, g))
+        b = math.max(0, math.min(255, b))
         color = Color(a, r, g, b)
     end
 
@@ -628,6 +635,7 @@ end
 ---@param g number @绿色比例 (0~1)
 ---@param b number @蓝色比例 (0~1)
 ---@param a number|nil @透明度比例 (0~1)，默认 1.0
+---@overload fun(id: string, r: number, g: number, b: number)
 function M:addColorScale(id, r, g, b, a)
     a = a or 1.0
     -- 先移除已存在的同 ID 调制层
