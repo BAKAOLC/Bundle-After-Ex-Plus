@@ -361,26 +361,26 @@ function StateMachineBlueprintViewer:drawInfoPanel()
     local y_offset = panel_y + panel_height - 10
 
     BlueprintUI.Renderer.drawText(
-        string.format("缩放: %.0f%%", self.canvas.scale * 100),
-        panel_x + 5, y_offset, text_color, "left", "top")
+            string.format("缩放: %.0f%%", self.canvas.scale * 100),
+            panel_x + 5, y_offset, text_color, "left", "top")
 
     y_offset = y_offset - 18
     BlueprintUI.Renderer.drawText(
-        string.format("偏移: (%.0f, %.0f)", self.canvas.offset_x, self.canvas.offset_y),
-        panel_x + 5, y_offset, text_color, "left", "top")
+            string.format("偏移: (%.0f, %.0f)", self.canvas.offset_x, self.canvas.offset_y),
+            panel_x + 5, y_offset, text_color, "left", "top")
 
     if self.selected_node then
         y_offset = y_offset - 18
         local select_color = lstg.Color(255, 100, 255, 100)
         BlueprintUI.Renderer.drawText(
-            string.format("选中节点: %s", self.selected_node.name),
-            panel_x + 5, y_offset, select_color, "left", "top")
+                string.format("选中节点: %s", self.selected_node.name),
+                panel_x + 5, y_offset, select_color, "left", "top")
     elseif self.selected_connection then
         y_offset = y_offset - 18
         local select_color = lstg.Color(255, 255, 200, 100)
         BlueprintUI.Renderer.drawText(
-            "选中: 连线",
-            panel_x + 5, y_offset, select_color, "left", "top")
+                "选中: 连线",
+                panel_x + 5, y_offset, select_color, "left", "top")
     end
 
     y_offset = y_offset - 22

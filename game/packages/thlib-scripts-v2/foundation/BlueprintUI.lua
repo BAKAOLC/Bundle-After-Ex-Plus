@@ -62,12 +62,12 @@ end
 ---更新输入状态
 function Input:update()
     local mx, my = lstg.GetMousePosition()
-    
+
     if screen and screen.scale then
         mx = (mx - screen.dx) / screen.scale
         my = (my - screen.dy) / screen.scale
     end
-    
+
     self.mouse.x = mx
     self.mouse.y = my
 
