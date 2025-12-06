@@ -5,7 +5,7 @@ local ComponentSystem = require("core.ComponentSystem")
 ---@class thlib.Player.SpellComponent : core.Component
 ---@field spellFunc function|nil
 ---@field costBomb boolean
----@field timers systems.TimerSystem|nil
+---@field timerComp components.TimerComponent|nil
 ---@field inputComp thlib.Player.InputComponent|nil
 ---@field protectComp thlib.Player.ProtectComponent|nil
 ---@field stateComp thlib.Player.StateComponent|nil
@@ -18,7 +18,7 @@ local SpellComponentType = TypeDef.create("thlib.Player.SpellComponent", Compone
         spellFunc = nil,
         costBomb = true,
         interval = 0,
-        timers = nil,
+        timerComp = nil,
         inputComp = nil,
         protectComp = nil,
         stateComp = nil,
@@ -26,15 +26,12 @@ local SpellComponentType = TypeDef.create("thlib.Player.SpellComponent", Compone
     methods = {
         Start = function(self)
             -- 获取计时器组件
-            local timerComp = self.owner:getComponent("timer")
-            if timerComp then
-                self.timers = timerComp.timers
-                -- 设置符卡计时器的间隔
-                if self.interval > 0 then
-                    local spellTimer = self.timers:getTimer("spell")
-                    if spellTimer then
-                        spellTimer:setInterval(self.interval)
-                    end
+            self.timerComp = self.owner:getComponent("timer")
+            -- 设置符卡计时器的间隔
+            if self.timerComp and self.interval > 0 then
+                local spellTimer = self.timerComp:getTimer("spell")
+                if spellTimer then
+                    spellTimer:setInterval(self.interval)
                 end
             end
 
@@ -56,7 +53,7 @@ local SpellComponentType = TypeDef.create("thlib.Player.SpellComponent", Compone
                 return
             end
 
-            if not self.timers or not self.timers:isReady("spell") then
+            if not self.timerComp or not self.timerComp:isReady("spell") then
                 return
             end
 
@@ -78,8 +75,8 @@ local SpellComponentType = TypeDef.create("thlib.Player.SpellComponent", Compone
                 item.PlayerSpell()
             end
 
-            if self.timers then
-                self.timers:trigger("spell")
+            if self.timerComp then
+                self.timerComp:trigger("spell")
             end
 
             if self.spellFunc then
@@ -114,8 +111,8 @@ local SpellComponentType = TypeDef.create("thlib.Player.SpellComponent", Compone
                 self.stateComp:saveFromDeathSpell()
             end
 
-            if self.timers then
-                self.timers:trigger("spell")
+            if self.timerComp then
+                self.timerComp:trigger("spell")
             end
 
             if self.spellFunc then

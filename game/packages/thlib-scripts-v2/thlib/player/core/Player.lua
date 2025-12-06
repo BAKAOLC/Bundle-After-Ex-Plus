@@ -89,7 +89,7 @@ local PlayerType = TypeDef.create("thlib.Player", GameObject.Type, {
             -- 基础系统组件
             local TimerComp = require("components.TimerComponent")
             local BuffComp = require("components.BuffComponent")
-            local MultiplierComp = require("components.MultiplierComponent")
+            local ModifierComp = require("components.ModifierComponent")
 
             -- 玩家组件
             local StateComp = require("thlib.player.components.StateComponent")
@@ -162,16 +162,11 @@ local PlayerType = TypeDef.create("thlib.Player", GameObject.Type, {
                 )
             end
 
-            -- 添加倍率组件（默认启用）
-            if componentConfigs.multiplier ~= false then
+            -- 添加修饰器组件（默认启用）
+            if componentConfigs.modifier ~= false then
                 self:addComponent(
-                        MultiplierComp.create(componentConfigs.multiplier or {
-                            multipliers = {
-                                damage = 1.0,
-                                speed = 1.0,
-                            }
-                        }),
-                        MultiplierComp.Type.typeName
+                        ModifierComp.create(componentConfigs.modifier or {}),
+                        ModifierComp.Type.typeName
                 )
             end
 

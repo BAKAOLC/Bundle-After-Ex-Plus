@@ -5,7 +5,7 @@ local ComponentSystem = require("core.ComponentSystem")
 
 ---@class thlib.Player.MovementComponent : core.Component
 ---@field moveFunc function|nil 自定义移动函数 function(player, component)
----@field multipliers systems.MultiplierSystem|nil
+---@field modifierComp components.ModifierComponent|nil
 ---@field inputComp thlib.Player.InputComponent|nil
 ---@field stateComp thlib.Player.StateComponent|nil
 
@@ -15,15 +15,12 @@ local MovementComponentType = TypeDef.create("thlib.Player.MovementComponent", C
         enabled = true,
         executePriority = 20,
         executeAfter = { "input" }, -- 必须在输入组件之后执行
-        multipliers = nil,
+        modifierComp = nil,
     },
     methods = {
         Start = function(self)
-            -- 获取倍率组件引用
-            local multiplierComp = self.owner:getComponent("multiplier")
-            if multiplierComp then
-                self.multipliers = multiplierComp.multipliers
-            end
+            -- 获取修饰器组件引用
+            self.modifierComp = self.owner:getComponent("modifier")
 
             -- 获取输入组件
             local inputComp = self.owner:getComponent("input")
@@ -83,8 +80,8 @@ local MovementComponentType = TypeDef.create("thlib.Player.MovementComponent", C
 
             -- 计算速度
             local speed = player.slow == 1 and self.lowSpeed or self.highSpeed
-            if self.multipliers then
-                speed = speed * self.multipliers:get("speed")
+            if self.modifierComp then
+                speed = self.modifierComp:apply("speed", speed)
             end
 
             -- 计算角度

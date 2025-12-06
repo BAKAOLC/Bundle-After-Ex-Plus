@@ -617,14 +617,29 @@ function PlayerManager:removeBuffFromAll(buffId)
     end)
 end
 
----设置所有玩家的倍率
----@param multiplierName string 倍率名称（如 "damage", "speed"）
----@param value number 倍率值
-function PlayerManager:setMultiplierForAll(multiplierName, value)
+---为所有玩家添加修饰器
+---@param type string 类型名（如 "damage", "speed"）
+---@param source string 来源标识
+---@param operation string 操作类型（"add", "multiply", "power"）
+---@param value number 操作值
+---@param order number|nil 执行顺序（可选）
+function PlayerManager:addModifierForAll(type, source, operation, value, order)
     self:forEach(function(player)
-        local multComp = player:getComponent("multiplier")
-        if multComp then
-            multComp:set(multiplierName, value)
+        local modifierComp = player:getComponent("modifier")
+        if modifierComp then
+            modifierComp:addModifier(type, source, operation, value, order)
+        end
+    end)
+end
+
+---移除所有玩家的修饰器
+---@param type string 类型名（如 "damage", "speed"）
+---@param source string 来源标识
+function PlayerManager:removeModifierForAll(type, source)
+    self:forEach(function(player)
+        local modifierComp = player:getComponent("modifier")
+        if modifierComp then
+            modifierComp:removeModifier(type, source)
         end
     end)
 end

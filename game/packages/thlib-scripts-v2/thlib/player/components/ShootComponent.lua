@@ -4,7 +4,7 @@ local ComponentSystem = require("core.ComponentSystem")
 ---射击组件
 ---@class thlib.Player.ShootComponent : core.Component
 ---@field shootFunc function|nil
----@field timers systems.TimerSystem|nil
+---@field timerComp components.TimerComponent|nil
 ---@field inputComp thlib.Player.InputComponent|nil
 ---@field powerComp thlib.Player.PowerComponent|nil
 ---@field optionComp thlib.Player.OptionComponent|nil
@@ -23,15 +23,12 @@ local ShootComponentType = TypeDef.create("thlib.Player.ShootComponent", Compone
     methods = {
         Start = function(self)
             -- 获取计时器组件
-            local timerComp = self.owner:getComponent("timer")
-            if timerComp then
-                self.timers = timerComp.timers
-                -- 设置射击计时器的间隔
-                if self.interval > 0 then
-                    local shootTimer = self.timers:getTimer("shoot")
-                    if shootTimer then
-                        shootTimer:setInterval(self.interval)
-                    end
+            self.timerComp = self.owner:getComponent("timer")
+            -- 设置射击计时器的间隔
+            if self.timerComp and self.interval > 0 then
+                local shootTimer = self.timerComp:getTimer("shoot")
+                if shootTimer then
+                    shootTimer:setInterval(self.interval)
                 end
             end
 
@@ -61,12 +58,12 @@ local ShootComponentType = TypeDef.create("thlib.Player.ShootComponent", Compone
                 return
             end
 
-            if not self.timers or not self.timers:isReady("shoot") then
+            if not self.timerComp or not self.timerComp:isReady("shoot") then
                 return
             end
 
-            if self.timers then
-                self.timers:trigger("shoot")
+            if self.timerComp then
+                self.timerComp:trigger("shoot")
             end
 
             if self.shootFunc then

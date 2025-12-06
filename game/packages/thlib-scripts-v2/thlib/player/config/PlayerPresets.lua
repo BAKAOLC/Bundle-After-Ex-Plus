@@ -54,11 +54,25 @@ function Presets.default()
         -- Buff组件（默认启用，无需配置）
         buff = {},
 
-        -- 倍率组件配置
-        multiplier = {
-            multipliers = {
-                damage = 1.0,
-                speed = 1.0,
+        -- 修饰器组件配置
+        modifier = {
+            modifiers = {
+                damageDealt = {
+                    {
+                        source = "base",
+                        operation = "multiply",
+                        value = 1.0,
+                        order = 0,
+                    }
+                },
+                speed = {
+                    {
+                        source = "base",
+                        operation = "multiply",
+                        value = 1.0,
+                        order = 0,
+                    }
+                },
             }
         },
 
