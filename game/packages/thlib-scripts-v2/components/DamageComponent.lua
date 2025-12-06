@@ -1,6 +1,6 @@
 local type = type
 
----伤害组件（装备在接受伤害的实体上）
+---伤害组件（装备在造成伤害的实体上）
 local TypeDef = require("core.TypeDef")
 local ComponentSystem = require("core.ComponentSystem")
 
@@ -12,37 +12,76 @@ local ComponentSystem = require("core.ComponentSystem")
 ---@field data table|nil 自定义数据
 
 ---@class components.DamageComponent : core.Component
----@field onDamageReceived function|nil 接收伤害回调 function(damageComponent, source, damageInfo, actualDamage)
----@field onDamageBlocked function|nil 伤害被阻挡回调 function(damageComponent, source, damageInfo)
+---@field onDamageDealt function|nil 造成伤害回调 function(damageComponent, target, damageInfo, actualDamage)
+---@field baseDamage number|nil 基础伤害值（可选，用于自动计算）
 
 -- 定义组件类型
 local DamageComponentType = TypeDef.create("components.DamageComponent", ComponentSystem.ComponentType, {
     defaults = {
         enabled = true,
-        executePriority = 85,
+        executePriority = 80,
         alias = "damage",
-        onDamageReceived = nil,
-        onDamageBlocked = nil,
+        onDamageDealt = nil,
+        baseDamage = nil,
     },
     methods = {
-        -- 接收伤害
-        -- @param damage number|components.DamageInfo 伤害值或伤害信息对象
-        -- @param source any|nil 伤害来源（当damage为数字时使用）
+        -- 对目标造成伤害
+        -- @param target any 目标对象（需要有 getComponent 方法）
+        -- @param damage number|components.DamageInfo|nil 伤害值或伤害信息对象（如果为nil，使用baseDamage）
+        -- @param source any|nil 伤害来源（当damage为数字时使用，默认使用self.owner）
         -- @param damageType string|nil 伤害类型（当damage为数字时使用）
-        -- @return number|nil 实际造成的伤害值，如果被阻挡或无效则返回0或nil
-        takeDamage = function(self, damage, source, damageType)
+        -- @return number|nil 实际造成的伤害值，如果目标无效或没有DamageReceiverComponent则返回nil
+        dealDamage = function(self, target, damage, source, damageType)
+            if not target or not target.getComponent then
+                return nil
+            end
+
+            -- 获取目标的 DamageReceiverComponent
+            local receiverComp = target:getComponent("damageReceiver")
+            if not receiverComp then
+                return nil
+            end
+
             -- 构建伤害信息
             local damageInfo
+            if damage == nil then
+                -- 如果没有提供伤害值，使用baseDamage
+                if self.baseDamage == nil then
+                    return nil
+                end
+                damage = self.baseDamage
+            end
+
             if type(damage) == "number" then
+                -- 应用伤害倍率（通过ModifierComponent）
+                local finalDamage = damage
+                if self.owner and self.owner.getComponent then
+                    local modifierComp = self.owner:getComponent("modifier")
+                    if modifierComp then
+                        finalDamage = modifierComp:apply("damageDealt", finalDamage)
+                    end
+                end
+
                 damageInfo = {
-                    damage = damage,
-                    source = source,
+                    damage = finalDamage,
+                    source = source or self.owner,
                     damageType = damageType,
                     canBlock = true,
                     data = {},
                 }
             else
                 damageInfo = damage
+                -- 应用伤害倍率
+                if self.owner and self.owner.getComponent then
+                    local modifierComp = self.owner:getComponent("modifier")
+                    if modifierComp then
+                        damageInfo.damage = modifierComp:apply("damageDealt", damageInfo.damage)
+                    end
+                end
+                -- 如果没有指定source，使用self.owner
+                if not damageInfo.source then
+                    damageInfo.source = self.owner
+                end
                 if damageInfo.canBlock == nil then
                     damageInfo.canBlock = true
                 end
@@ -51,70 +90,45 @@ local DamageComponentType = TypeDef.create("components.DamageComponent", Compone
                 end
             end
 
-            -- 检查是否有 HealthComponent
-            local healthComp = nil
-            if self.owner and self.owner.getComponent then
-                healthComp = self.owner:getComponent("health")
-            end
+            -- 对目标造成伤害
+            local actualDamage = receiverComp:takeDamage(damageInfo)
 
-            if not healthComp then
-                return nil
-            end
-
-            -- 检查是否被阻挡
-            if damageInfo.canBlock and self:_checkBlocked(damageInfo) then
-                if self.onDamageBlocked then
-                    self.onDamageBlocked(self, damageInfo.source, damageInfo)
-                end
-                return 0
-            end
-
-            -- 应用受伤倍率
-            local finalDamage = damageInfo.damage
-            if self.owner and self.owner.getComponent then
-                local modifierComp = self.owner:getComponent("modifier")
-                if modifierComp then
-                    finalDamage = modifierComp:apply("damageReceived", finalDamage)
-                end
-            end
-
-            -- 更新伤害信息中的最终伤害值
-            damageInfo.damage = finalDamage
-
-            -- 应用伤害
-            local actualDamage = healthComp:takeDamage(finalDamage, damageInfo.source)
-
-            -- 通知接收伤害
-            if self.onDamageReceived then
-                self.onDamageReceived(self, damageInfo.source, damageInfo, actualDamage)
+            -- 通知造成伤害
+            if actualDamage and actualDamage > 0 and self.onDamageDealt then
+                self.onDamageDealt(self, target, damageInfo, actualDamage)
             end
 
             return actualDamage
         end,
 
-        -- 检查伤害是否被阻挡
-        -- @private
-        _checkBlocked = function(self, damageInfo)
-            -- 可以在这里添加阻挡逻辑
-            -- 例如检查是否有护盾、无敌状态等
-            if self.owner and self.owner.getComponent then
-                local healthComp = self.owner:getComponent("health")
-                if healthComp then
-                    -- 可以检查是否有护盾组件等
-                end
-            end
-            return false
-        end,
-
         -- 创建伤害信息（辅助方法）
         createDamageInfo = function(self, damage, source, damageType, canBlock, data)
+            -- 应用伤害倍率
+            local finalDamage = damage
+            if self.owner and self.owner.getComponent then
+                local modifierComp = self.owner:getComponent("modifier")
+                if modifierComp then
+                    finalDamage = modifierComp:apply("damageDealt", finalDamage)
+                end
+            end
+
             return {
-                damage = damage,
-                source = source,
+                damage = finalDamage,
+                source = source or self.owner,
                 damageType = damageType,
                 canBlock = canBlock ~= false,
                 data = data or {},
             }
+        end,
+
+        -- 设置基础伤害值
+        setBaseDamage = function(self, damage)
+            self.baseDamage = damage
+        end,
+
+        -- 获取基础伤害值
+        getBaseDamage = function(self)
+            return self.baseDamage
         end,
     },
 })
