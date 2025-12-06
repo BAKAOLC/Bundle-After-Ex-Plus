@@ -18,14 +18,14 @@ local DeathAnimationComponentType = TypeDef.create("thlib.Player.DeathAnimationC
     methods = {
         Awake = function(self)
             local player = self.owner
-            player:registerEvent("onStateEnter_dying", "deathAnimation", 10, function(p)
+            player:registerEvent("PlayerState:onStateEnter_dying", "deathAnimation", 10, function(p)
                 self:playAnimation(p)
             end)
         end,
 
         OnDestroy = function(self)
             local player = self.owner
-            player:unregisterEvent("onStateEnter_dying", "deathAnimation")
+            player:unregisterEvent("PlayerState:onStateEnter_dying", "deathAnimation")
         end,
 
         playAnimation = function(self, player)

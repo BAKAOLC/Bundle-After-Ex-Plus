@@ -93,7 +93,7 @@ local DamageComponentType = TypeDef.create("components.DamageComponent", Compone
 
             -- 通过事件系统通知造成伤害
             if actualDamage and actualDamage > 0 and self.owner and self.owner._dispatchEvent then
-                self.owner:_dispatchEvent("onDamageDealt", self, target, damageInfo, actualDamage)
+                self.owner:_dispatchEvent("DamageComponent:onDamageDealt", self, target, damageInfo, actualDamage)
             end
 
             return actualDamage

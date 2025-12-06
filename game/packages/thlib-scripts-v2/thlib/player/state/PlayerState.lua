@@ -11,20 +11,20 @@ local function createPlayerStateMachine(player)
     -- 注册状态
     local STATE_NORMAL = sm:registerState("normal", {
         onEnter = function(ctx)
-            ctx.player:_dispatchEvent("onStateEnter_normal")
+            ctx.player:_dispatchEvent("PlayerState:onStateEnter_normal")
         end,
         onExit = function(ctx)
-            ctx.player:_dispatchEvent("onStateExit_normal")
+            ctx.player:_dispatchEvent("PlayerState:onStateExit_normal")
         end,
     })
 
     -- 决死状态
     local STATE_DEATH_SPELL = sm:registerState("deathSpell", {
         onEnter = function(ctx)
-            ctx.player:_dispatchEvent("onStateEnter_deathSpell")
+            ctx.player:_dispatchEvent("PlayerState:onStateEnter_deathSpell")
         end,
         onExit = function(ctx)
-            ctx.player:_dispatchEvent("onStateExit_deathSpell")
+            ctx.player:_dispatchEvent("PlayerState:onStateExit_deathSpell")
         end,
     })
 
@@ -32,11 +32,11 @@ local function createPlayerStateMachine(player)
     local STATE_DYING = sm:registerState("dying", {
         onEnter = function(ctx)
             local p = ctx.player
-            p:_dispatchEvent("onStateEnter_dying")
-            p:_dispatchEvent("onMiss")
+            p:_dispatchEvent("PlayerState:onStateEnter_dying")
+            p:_dispatchEvent("PlayerState:onMiss")
         end,
         onExit = function(ctx)
-            ctx.player:_dispatchEvent("onStateExit_dying")
+            ctx.player:_dispatchEvent("PlayerState:onStateExit_dying")
         end,
     })
 
@@ -44,11 +44,11 @@ local function createPlayerStateMachine(player)
     local STATE_RESPAWNING = sm:registerState("respawning", {
         onEnter = function(ctx)
             local p = ctx.player
-            p:_dispatchEvent("onStateEnter_respawning")
-            p:_dispatchEvent("onRespawn")
+            p:_dispatchEvent("PlayerState:onStateEnter_respawning")
+            p:_dispatchEvent("PlayerState:onRespawn")
         end,
         onExit = function(ctx)
-            ctx.player:_dispatchEvent("onStateExit_respawning")
+            ctx.player:_dispatchEvent("PlayerState:onStateExit_respawning")
         end,
     })
 

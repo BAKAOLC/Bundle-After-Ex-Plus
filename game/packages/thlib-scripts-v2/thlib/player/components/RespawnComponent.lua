@@ -38,14 +38,14 @@ local RespawnComponentType = TypeDef.create("thlib.Player.RespawnComponent", Com
             local player = self.owner
 
             -- 监听重生状态事件
-            player:registerEvent("onStateEnter_respawning", "respawnHandler", 10, function(p)
+            player:registerEvent("PlayerState:onStateEnter_respawning", "respawnHandler", 10, function(p)
                 self:handleRespawn(p)
             end)
         end,
 
         OnDestroy = function(self)
             local player = self.owner
-            player:unregisterEvent("onStateEnter_respawning", "respawnHandler")
+            player:unregisterEvent("PlayerState:onStateEnter_respawning", "respawnHandler")
         end,
 
         Start = function(self)

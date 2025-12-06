@@ -29,20 +29,20 @@ local CollisionComponentType = TypeDef.create("thlib.Player.CollisionComponent",
             local player = self.owner
 
             -- 注册碰撞事件
-            player:registerEvent("onCollision", "collisionHandler", 10, function(p, other)
+            player:registerEvent("GameObject:onCollision", "collisionHandler", 10, function(p, other)
                 return self:handleCollision(p, other)
             end)
 
             -- 注册Kill事件
-            player:registerEvent("onKill", "collisionKillHandler", 10, function(p)
+            player:registerEvent("GameObject:onKill", "collisionKillHandler", 10, function(p)
                 return self:handleKill(p)
             end)
         end,
 
         OnDestroy = function(self)
             local player = self.owner
-            player:unregisterEvent("onCollision", "collisionHandler")
-            player:unregisterEvent("onKill", "collisionKillHandler")
+            player:unregisterEvent("GameObject:onCollision", "collisionHandler")
+            player:unregisterEvent("GameObject:onKill", "collisionKillHandler")
         end,
 
         handleCollision = function(self, player, other)

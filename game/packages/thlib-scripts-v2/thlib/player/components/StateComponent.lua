@@ -34,7 +34,7 @@ local StateComponentType = TypeDef.create("thlib.Player.StateComponent", Compone
             self.stateMachine = PlayerState.createPlayerStateMachine(player)
 
             -- 监听状态进入事件
-            player:registerEvent("onStateEnter_normal", "state_normal", 10, function(p)
+            player:registerEvent("PlayerState:onStateEnter_normal", "state_normal", 10, function(p)
                 self.currentState = "normal"
                 p.__currentState = "normal"
                 self.stateTimers[self.currentState] = 0
@@ -42,38 +42,38 @@ local StateComponentType = TypeDef.create("thlib.Player.StateComponent", Compone
                 p.locked = false
             end)
 
-            player:registerEvent("onStateEnter_deathSpell", "state_deathSpell", 10, function(p)
+            player:registerEvent("PlayerState:onStateEnter_deathSpell", "state_deathSpell", 10, function(p)
                 self.currentState = "deathSpell"
                 p.__currentState = "deathSpell"
                 self.stateTimers[self.currentState] = 0
             end)
 
-            player:registerEvent("onStateEnter_dying", "state_dying", 10, function(p)
+            player:registerEvent("PlayerState:onStateEnter_dying", "state_dying", 10, function(p)
                 self.currentState = "dying"
                 p.__currentState = "dying"
                 self.stateTimers[self.currentState] = 0
                 p.locked = true
             end)
 
-            player:registerEvent("onStateEnter_respawning", "state_respawning", 10, function(p)
+            player:registerEvent("PlayerState:onStateEnter_respawning", "state_respawning", 10, function(p)
                 self.currentState = "respawning"
                 p.__currentState = "respawning"
                 self.stateTimers[self.currentState] = 0
             end)
 
             -- 监听血量耗尽事件
-            player:registerEvent("onHealthDepleted", "state_healthDepleted", 10, function(p, healthComp)
+            player:registerEvent("HealthComponent:onHealthDepleted", "state_healthDepleted", 10, function(p, healthComp)
                 self:handleHealthDepleted()
             end)
         end,
 
         OnDestroy = function(self)
             local player = self.owner
-            player:unregisterEvent("onStateEnter_normal", "state_normal")
-            player:unregisterEvent("onStateEnter_deathSpell", "state_deathSpell")
-            player:unregisterEvent("onStateEnter_dying", "state_dying")
-            player:unregisterEvent("onStateEnter_respawning", "state_respawning")
-            player:unregisterEvent("onHealthDepleted", "state_healthDepleted")
+            player:unregisterEvent("PlayerState:onStateEnter_normal", "state_normal")
+            player:unregisterEvent("PlayerState:onStateEnter_deathSpell", "state_deathSpell")
+            player:unregisterEvent("PlayerState:onStateEnter_dying", "state_dying")
+            player:unregisterEvent("PlayerState:onStateEnter_respawning", "state_respawning")
+            player:unregisterEvent("HealthComponent:onHealthDepleted", "state_healthDepleted")
         end,
 
         Update = function(self)

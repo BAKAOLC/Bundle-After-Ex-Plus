@@ -35,34 +35,34 @@ local PlayerType = TypeDef.create("thlib.Player", GameObject.Type, {
     methods = {
         Awake = function(self)
             -- 触发初始化事件
-            self:_dispatchEvent("onInit")
+            self:_dispatchEvent("GameObject:onInit")
         end,
 
         Update = function(self)
-            self:_dispatchEvent("onFrameBegin")
+            self:_dispatchEvent("GameObject:onFrameBegin")
         end,
 
         LateUpdate = function(self)
-            self:_dispatchEvent("onFrameEnd")
+            self:_dispatchEvent("GameObject:onFrameEnd")
         end,
 
         OnRender = function(self)
-            self:_dispatchEvent("onRenderBegin")
+            self:_dispatchEvent("GameObject:onRenderBegin")
         end,
 
         OnCollision = function(self, other)
             -- 触发碰撞事件，由组件处理
-            self:_dispatchEvent("onCollision", other)
+            self:_dispatchEvent("GameObject:onCollision", other)
         end,
 
         OnDelete = function(self)
             -- 触发删除事件
-            self:_dispatchEvent("onDelete")
+            self:_dispatchEvent("GameObject:onDelete")
         end,
 
         OnDestroy = function(self)
             PreserveObject(self)
-            self:_dispatchEvent("onKill")
+            self:_dispatchEvent("GameObject:onKill")
         end,
 
         setupComponents = function(self, componentConfigs)

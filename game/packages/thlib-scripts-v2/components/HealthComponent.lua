@@ -172,7 +172,7 @@ local HealthComponentType = TypeDef.create("components.HealthComponent", Compone
 
             -- 通过事件系统通知血量变化
             if self.owner and self.owner._dispatchEvent then
-                self.owner:_dispatchEvent("onHealthChanged", self, oldHealth, newHealth, delta)
+                self.owner:_dispatchEvent("HealthComponent:onHealthChanged", self, oldHealth, newHealth, delta)
             end
 
             -- 血量耗尽
@@ -182,7 +182,7 @@ local HealthComponentType = TypeDef.create("components.HealthComponent", Compone
                 end
                 -- 通过事件系统通知血量耗尽
                 if self.owner and self.owner._dispatchEvent then
-                    self.owner:_dispatchEvent("onHealthDepleted", self)
+                    self.owner:_dispatchEvent("HealthComponent:onHealthDepleted", self)
                 end
             end
 
@@ -193,7 +193,7 @@ local HealthComponentType = TypeDef.create("components.HealthComponent", Compone
                 end
                 -- 通过事件系统通知血量回满
                 if self.owner and self.owner._dispatchEvent then
-                    self.owner:_dispatchEvent("onHealthFull", self)
+                    self.owner:_dispatchEvent("HealthComponent:onHealthFull", self)
                 end
             end
         end,

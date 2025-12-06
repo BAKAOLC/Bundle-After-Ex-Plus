@@ -32,7 +32,7 @@ local GrazeComponentType = TypeDef.create("thlib.Player.GrazeComponent", Compone
             end
 
             -- 注册删除事件，清理 Grazer 对象
-            player:registerEvent("onDelete", "grazeDeleteHandler", 10, function(p)
+            player:registerEvent("GameObject:onDelete", "grazeDeleteHandler", 10, function(p)
                 if IsValid(self.grazeObject) then
                     Del(self.grazeObject)
                     self.grazeObject = nil
@@ -43,7 +43,7 @@ local GrazeComponentType = TypeDef.create("thlib.Player.GrazeComponent", Compone
         OnDestroy = function(self)
             local player = self.owner
             -- 取消注册事件
-            player:unregisterEvent("onDelete", "grazeDeleteHandler")
+            player:unregisterEvent("GameObject:onDelete", "grazeDeleteHandler")
 
             -- 清理 Grazer 对象（作为备用清理）
             if IsValid(self.grazeObject) then
@@ -62,7 +62,7 @@ local GrazeComponentType = TypeDef.create("thlib.Player.GrazeComponent", Compone
             end
 
             -- 触发事件，传递被擦弹的对象
-            self.owner:_dispatchEvent("onGraze", grazedObject)
+            self.owner:_dispatchEvent("GrazeComponent:onGraze", grazedObject)
         end,
 
         Update = function(self)

@@ -54,7 +54,7 @@ local DamageReceiverComponentType = TypeDef.create("components.DamageReceiverCom
             if damageInfo.canBlock and self:_checkBlocked(damageInfo) then
                 -- 通过事件系统通知伤害被阻挡
                 if self.owner and self.owner._dispatchEvent then
-                    self.owner:_dispatchEvent("onDamageBlocked", self, damageInfo.source, damageInfo)
+                    self.owner:_dispatchEvent("DamageReceiverComponent:onDamageBlocked", self, damageInfo.source, damageInfo)
                 end
                 return 0
             end
@@ -76,7 +76,7 @@ local DamageReceiverComponentType = TypeDef.create("components.DamageReceiverCom
 
             -- 通过事件系统通知接收伤害
             if self.owner and self.owner._dispatchEvent then
-                self.owner:_dispatchEvent("onDamageReceived", self, damageInfo.source, damageInfo, actualDamage)
+                self.owner:_dispatchEvent("DamageReceiverComponent:onDamageReceived", self, damageInfo.source, damageInfo, actualDamage)
             end
 
             return actualDamage

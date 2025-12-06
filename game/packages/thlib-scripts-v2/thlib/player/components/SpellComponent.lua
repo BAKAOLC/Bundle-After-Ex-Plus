@@ -104,7 +104,7 @@ local SpellComponentType = TypeDef.create("thlib.Player.SpellComponent", Compone
 
             New(bullet_deleter, player.x, player.y)
 
-            player:_dispatchEvent("onDeathSpellUsed")
+            player:_dispatchEvent("SpellComponent:onDeathSpellUsed")
 
             -- 切换回normal状态
             if self.stateComp then
