@@ -5,13 +5,11 @@ local ComponentSystem = require("core.ComponentSystem")
 
 ---@class core.GameObjectMixin
 ---@field componentSystem core.ComponentSystem
----@field _componentsResolved boolean
 
 ---为对象初始化组件系统
 ---@param obj table
 local function initComponentSystem(obj)
-    obj.componentSystem = ComponentSystem.new()
-    obj._componentsResolved = false
+    obj.componentSystem = ComponentSystem.new(obj)
 end
 
 ---添加组件
@@ -20,7 +18,6 @@ end
 ---@param componentType string
 ---@return number componentId
 local function addComponent(obj, component, componentType)
-    obj._componentsResolved = false
     return obj.componentSystem:addComponent(component, componentType)
 end
 
@@ -47,46 +44,28 @@ local function getComponents(obj, componentType)
     return obj.componentSystem:getComponents(componentType)
 end
 
----解析组件依赖
----在所有组件添加完成后调用，让组件互相获取引用
+---处理组件 Start 生命周期
 ---@param obj table
-local function resolveComponents(obj)
-    if obj._componentsResolved then
-        return
-    end
-
-    local components = obj.componentSystem.components
-    local count = obj.componentSystem.componentCount
-
-    -- 让每个组件解析依赖
-    for i = 1, count do
-        local component = components[i]
-        if component and component.resolveDependencies then
-            component:resolveDependencies(obj)
-        end
-    end
-
-    -- 然后调用 onAdd
-    for i = 1, count do
-        local component = components[i]
-        if component and component.onAdd then
-            component:onAdd()
-        end
-    end
-
-    obj._componentsResolved = true
+local function startComponents(obj)
+    obj.componentSystem:Start()
 end
 
----更新组件
+---更新组件 Update 生命周期
 ---@param obj table
 local function updateComponents(obj)
-    obj.componentSystem:update()
+    obj.componentSystem:Update()
+end
+
+---更新组件 LateUpdate 生命周期
+---@param obj table
+local function lateUpdateComponents(obj)
+    obj.componentSystem:LateUpdate()
 end
 
 ---渲染组件
 ---@param obj table
 local function renderComponents(obj)
-    obj.componentSystem:render()
+    obj.componentSystem:OnRender()
 end
 
 ---为对象混入组件系统方法
@@ -96,8 +75,9 @@ local function mixin(obj)
     obj.removeComponent = removeComponent
     obj.getComponent = getComponent
     obj.getComponents = getComponents
-    obj.resolveComponents = resolveComponents
+    obj.startComponents = startComponents
     obj.updateComponents = updateComponents
+    obj.lateUpdateComponents = lateUpdateComponents
     obj.renderComponents = renderComponents
 
     initComponentSystem(obj)
@@ -109,8 +89,9 @@ return {
     removeComponent = removeComponent,
     getComponent = getComponent,
     getComponents = getComponents,
-    resolveComponents = resolveComponents,
+    startComponents = startComponents,
     updateComponents = updateComponents,
+    lateUpdateComponents = lateUpdateComponents,
     renderComponents = renderComponents,
     mixin = mixin,
 }

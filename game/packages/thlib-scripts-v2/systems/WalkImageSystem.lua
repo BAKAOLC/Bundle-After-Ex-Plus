@@ -254,7 +254,7 @@ function M:registerAnimation(name, frameData, interval, loop)
             }
             frameIndex = frameIndex + 1
         else
-            print(string.format("[WalkImageSystem] 警告: 动画 '%s' 中找不到帧 ID '%s'", name, tostring(frameId)))
+            print(string.format("[WalkImageSystem] Warning: Frame ID '%s' not found in animation '%s'", tostring(frameId), name))
         end
     end
 

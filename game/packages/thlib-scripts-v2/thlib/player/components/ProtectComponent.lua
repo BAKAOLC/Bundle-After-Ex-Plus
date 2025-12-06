@@ -1,43 +1,46 @@
 ---保护效果组件（无敌时间）
+local TypeDef = require("core.TypeDef")
+local ComponentSystem = require("core.ComponentSystem")
 
 ---@class thlib.Player.ProtectComponent : core.Component
 ---@field protectTimer number
 
----创建保护组件
----@param owner thlib.Player
----@param config table
----@return thlib.Player.ProtectComponent
-local function create(owner, config)
-    config = config or {}
-
-    ---@type thlib.Player.ProtectComponent
-    local component = {
+-- 定义组件类型
+local ProtectComponentType = TypeDef.create("thlib.Player.ProtectComponent", ComponentSystem.ComponentType, {
+    defaults = {
         enabled = true,
         executePriority = 2,
-        typeName = "protect",
-        owner = owner,
+        alias = "protect",
         protectTimer = 0,
-    }
+    },
+    methods = {
+        Update = function(self)
+            if self.protectTimer > 0 then
+                self.protectTimer = self.protectTimer - 1
+            end
+        end,
 
-    function component:update()
-        if self.protectTimer > 0 then
-            self.protectTimer = self.protectTimer - 1
-        end
-    end
+        isProtected = function(self)
+            return self.protectTimer > 0
+        end,
 
-    function component:isProtected()
-        return self.protectTimer > 0
-    end
+        setProtect = function(self, duration)
+            self.protectTimer = duration
+        end,
+    },
+})
 
-    function component:setProtect(duration)
-        self.protectTimer = duration
-    end
-
-    return component
+---创建保护组件
+---@param config table
+---@return thlib.Player.ProtectComponent
+local function create(config)
+    config = config or {}
+    return TypeDef.instantiate(ProtectComponentType, config)
 end
 
 return {
     create = create,
+    Type = ProtectComponentType,
 }
 
 

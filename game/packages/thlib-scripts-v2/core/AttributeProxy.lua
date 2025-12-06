@@ -2,6 +2,8 @@ local rawget = rawget
 local rawset = rawset
 local type = type
 local pairs = pairs
+local error = error
+local string = string
 local setmetatable = setmetatable
 local lstg = require("lstg")
 
@@ -114,7 +116,7 @@ function M:applyProxies(proxies)
     local storage = self[KEY_ATTRIBUTE_PROXIES_STORAGE]
     for _, proxy in pairs(proxies) do
         if proxies.key == KEY_ATTRIBUTE_PROXIES_LIST or proxies.key == KEY_ATTRIBUTE_PROXIES_STORAGE then
-            error(string.format("Invalid proxy key: %q", proxy.key))
+            error(string.format("Invalid proxy key: %q", proxy.key), 2)
         end
         local value = self[proxy.key]
         current_proxies[proxy.key] = proxy

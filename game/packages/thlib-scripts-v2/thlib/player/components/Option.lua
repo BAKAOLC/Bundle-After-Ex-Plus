@@ -1,6 +1,6 @@
 local type = type
 local math = math
-local setmetatable = setmetatable
+local TypeDef = require("core.TypeDef")
 
 ---单个子机对象
 ---每个子机是独立的对象，能够响应火力变化等事件
@@ -19,8 +19,13 @@ local setmetatable = setmetatable
 ---@field angle number|function|nil 发射角度（供射击使用，数值或返回角度的函数）
 ---@field getTargetOffset fun(option: thlib.Player.Option): number, number|nil 获取目标偏移量函数，返回 offsetX, offsetY
 ---@field customRender fun(option: thlib.Player.Option)|nil 自定义渲染函数
----@field onInit fun(option: thlib.Player.Option)|nil 初始化回调
----@field onUpdate fun(option: thlib.Player.Option)|nil 每帧更新回调
+---@field onAwake fun(option: thlib.Player.Option)|nil Awake 生命周期回调
+---@field onInit fun(option: thlib.Player.Option)|nil 初始化回调（向后兼容，等同于 onAwake）
+---@field onStart fun(option: thlib.Player.Option)|nil Start 生命周期回调
+---@field onUpdate fun(option: thlib.Player.Option)|nil Update 生命周期回调
+---@field onLateUpdate fun(option: thlib.Player.Option)|nil LateUpdate 生命周期回调
+---@field onRender fun(option: thlib.Player.Option)|nil OnRender 生命周期回调
+---@field onDestroy fun(option: thlib.Player.Option)|nil OnDestroy 生命周期回调
 ---@field onActivate fun(option: thlib.Player.Option)|nil 激活时回调
 ---@field onDeactivate fun(option: thlib.Player.Option)|nil 停用时回调
 
@@ -48,182 +53,243 @@ local setmetatable = setmetatable
 ---@field blendMode string 混合模式
 ---@field getTargetOffset fun(option: thlib.Player.Option): number, number|nil 获取目标偏移量函数
 ---@field customRender fun(option: thlib.Player.Option)|nil 自定义渲染函数
-local Option = {}
-Option.__index = Option
+
+-- 定义 Option 类型
+local OptionType = TypeDef.create("thlib.Player.Option", nil, {
+    defaults = {
+        index = 0,
+        owner = nil,
+        x = 0,
+        y = 0,
+        timer = 0,
+        rot = 0,
+        omega = 0,
+        alpha = 0,
+        visible = false,
+        active = false,
+        config = {},
+        powerComp = nil,
+        customData = {},
+        lerpSpeed = 0.3,
+        alphaLerpSpeed = 0.1,
+        requiredPower = 0,
+        image = nil,
+        color = nil,
+        scaleX = 1.0,
+        scaleY = 1.0,
+        blendMode = "",
+        getTargetOffset = nil,
+        customRender = nil,
+    },
+    methods = {
+        setPowerComponent = function(self, powerComp)
+            self.powerComp = powerComp
+        end,
+
+        Awake = function(self)
+            -- 调用配置中的 Awake 回调（向后兼容：也支持 onInit）
+            if self.config.onAwake then
+                self.config.onAwake(self)
+            elseif self.config.onInit then
+                self.config.onInit(self)
+            end
+        end,
+
+        Start = function(self)
+            -- Start 生命周期，在第一次 Update 之前调用
+            -- 此时 powerComp 应该已经设置
+            if self.config.onStart then
+                self.config.onStart(self)
+            end
+        end,
+
+        Update = function(self)
+            if not self.powerComp then
+                return
+            end
+
+            -- 获取当前火力等级
+            local support = self.powerComp:getSupport()
+
+            -- 判断是否激活
+            local wasActive = self.active
+            self.active = (support >= self.requiredPower)
+
+            -- 触发激活/停用事件
+            if self.active and not wasActive and self.config.onActivate then
+                self.config.onActivate(self)
+            elseif not self.active and wasActive and self.config.onDeactivate then
+                self.config.onDeactivate(self)
+            end
+
+            -- 更新计时器
+            self.timer = self.timer + 1
+
+            -- 直接设置透明度和可见性
+            if self.active then
+                self.alpha = 1.0
+                self.visible = true
+            else
+                self.alpha = 0
+                self.visible = false
+            end
+
+            -- 更新图像旋转角度
+            self.rot = self.rot + self.omega
+
+            -- 更新位置
+            if self.getTargetOffset then
+                local baseX, baseY = self.powerComp:getSupportPosition()
+                local offsetX, offsetY = self.getTargetOffset(self)
+
+                local targetX = baseX + (offsetX or 0)
+                local targetY = baseY + (offsetY or 0)
+
+                self.x = self.x + (targetX - self.x) * self.lerpSpeed
+                self.y = self.y + (targetY - self.y) * self.lerpSpeed
+            end
+
+            -- 调用自定义更新函数
+            if self.config.onUpdate then
+                self.config.onUpdate(self)
+            end
+        end,
+
+        LateUpdate = function(self)
+            -- LateUpdate 生命周期，在 Update 之后调用
+            if self.config.onLateUpdate then
+                self.config.onLateUpdate(self)
+            end
+        end,
+
+        OnRender = function(self)
+            if not self.visible then
+                return
+            end
+
+            -- 调用配置中的 OnRender 回调
+            if self.config.onRender then
+                self.config.onRender(self)
+                return
+            end
+
+            -- 使用自定义渲染函数（向后兼容）
+            if self.customRender then
+                self.customRender(self)
+                return
+            end
+
+            -- 确定使用的图像
+            if not self.image then
+                return
+            end
+
+            -- 使用子机自己的旋转角度
+            local rotation = self.rot
+
+            -- 应用颜色和透明度
+            local color = self.color
+            local colorType = type(color)
+            local colorA, colorR, colorG, colorB
+            if colorType == "function" then
+                color = color(self)
+                colorType = type(color)
+            end
+
+            if colorType == "table" then
+                colorA = color.a or 255
+                colorR = color.r or 255
+                colorG = color.g or 255
+                colorB = color.b or 255
+            elseif colorType == "userdata" then
+                colorA, colorR, colorG, colorB = color:ARGB()
+            else
+                colorA = 255
+                colorR = 255
+                colorG = 255
+                colorB = 255
+            end
+
+            local finalColor = Color(
+                    math.floor(colorA * self.alpha),
+                    colorR,
+                    colorG,
+                    colorB
+            )
+
+            -- 渲染
+            SetImageState(self.image, self.blendMode, finalColor)
+            Render(self.image, self.x, self.y, rotation, self.scaleX, self.scaleY)
+        end,
+
+        OnDestroy = function(self)
+            -- OnDestroy 生命周期，在销毁时调用
+            if self.config.onDestroy then
+                self.config.onDestroy(self)
+            end
+
+            -- 清理资源
+            self.powerComp = nil
+            self.config = nil
+            self.getTargetOffset = nil
+            self.customRender = nil
+        end,
+
+        getAngle = function(self)
+            if self.config.angle then
+                if type(self.config.angle) == "function" then
+                    return self.config.angle(self)
+                else
+                    return self.config.angle
+                end
+            end
+            return nil
+        end,
+    },
+})
 
 ---创建子机对象
 ---@param owner thlib.Player
 ---@param index number 子机索引（从1开始）
 ---@param config thlib.Player.OptionConfig 配置
 ---@return thlib.Player.Option
-function Option.new(owner, index, config)
-    local self = setmetatable({}, Option)
+local function new(owner, index, config)
+    config = config or {}
 
-    self.index = index
-    self.owner = owner
-    self.x = owner.x
-    self.y = owner.y
-    self.timer = 0
-    self.rot = config.rot or 0
-    self.omega = config.omega or 0
-    self.alpha = 0
-    self.visible = false
-    self.active = false
-    self.config = config or {}
-    self.powerComp = nil
-    self.customData = {}
+    local option = TypeDef.instantiate(OptionType, {
+        index = index,
+        owner = owner,
+        x = owner.x,
+        y = owner.y,
+        timer = 0,
+        rot = config.rot or 0,
+        omega = config.omega or 0,
+        alpha = 0,
+        visible = false,
+        active = false,
+        config = config,
+        powerComp = nil,
+        customData = {},
+        lerpSpeed = config.lerpSpeed or 0.3,
+        alphaLerpSpeed = config.alphaLerpSpeed or 0.1,
+        requiredPower = config.requiredPower or (index - 1),
+        image = config.image,
+        color = config.color or Color(255, 255, 255, 255),
+        scaleX = config.scaleX or 1.0,
+        scaleY = config.scaleY or 1.0,
+        blendMode = config.blendMode or "",
+        getTargetOffset = config.getTargetOffset,
+        customRender = config.customRender,
+        _lifecycleStarted = false, -- 标记 Start 是否已调用
+    })
 
-    -- 配置参数
-    self.lerpSpeed = config.lerpSpeed or 0.3
-    self.alphaLerpSpeed = config.alphaLerpSpeed or 0.1
-    self.requiredPower = config.requiredPower or (index - 1)  -- 需要的火力等级，默认为 index-1
-
-    -- 视觉配置
-    self.image = config.image  -- 子机自己的图像
-    self.color = config.color or Color(255, 255, 255, 255)  -- 子机颜色
-    self.scaleX = config.scaleX or 1.0  -- 水平缩放
-    self.scaleY = config.scaleY or 1.0  -- 垂直缩放
-    self.blendMode = config.blendMode or ""  -- 混合模式
-
-    -- 获取目标偏移量函数：function(option) -> offsetX, offsetY
-    self.getTargetOffset = config.getTargetOffset
-
-    -- 渲染函数（可选）：function(option, defaultImage, baseRotation)
-    self.customRender = config.customRender
-
-    -- 初始化函数（可选）：function(option)
-    if config.onInit then
-        config.onInit(self)
+    -- 立即调用 Awake 生命周期
+    local awake = option.Awake
+    if awake then
+        awake(option)
     end
 
-    return self
-end
-
----设置火力组件引用
----@param powerComp thlib.Player.PowerComponent
-function Option:setPowerComponent(powerComp)
-    self.powerComp = powerComp
-end
-
----更新子机状态
-function Option:update()
-    if not self.powerComp then
-        return
-    end
-
-    -- 获取当前火力等级
-    local support = self.powerComp:getSupport()
-
-    -- 判断是否激活
-    local wasActive = self.active
-    self.active = (support >= self.requiredPower)
-
-    -- 触发激活/停用事件
-    if self.active and not wasActive and self.config.onActivate then
-        self.config.onActivate(self)
-    elseif not self.active and wasActive and self.config.onDeactivate then
-        self.config.onDeactivate(self)
-    end
-
-    -- 更新计时器
-    self.timer = self.timer + 1
-
-    -- 直接设置透明度和可见性
-    if self.active then
-        self.alpha = 1.0
-        self.visible = true
-    else
-        self.alpha = 0
-        self.visible = false
-    end
-
-    -- 更新图像旋转角度
-    self.rot = self.rot + self.omega
-
-    -- 更新位置
-    if self.getTargetOffset then
-        local baseX, baseY = self.powerComp:getSupportPosition()
-        local offsetX, offsetY = self.getTargetOffset(self)
-
-        local targetX = baseX + (offsetX or 0)
-        local targetY = baseY + (offsetY or 0)
-
-        self.x = self.x + (targetX - self.x) * self.lerpSpeed
-        self.y = self.y + (targetY - self.y) * self.lerpSpeed
-    end
-
-    -- 调用自定义更新函数
-    if self.config.onUpdate then
-        self.config.onUpdate(self)
-    end
-end
-
----渲染子机
-function Option:render()
-    if not self.visible then
-        return
-    end
-
-    -- 使用自定义渲染函数
-    if self.customRender then
-        self.customRender(self)
-        return
-    end
-
-    -- 确定使用的图像
-    if not self.image then
-        return
-    end
-
-    -- 使用子机自己的旋转角度
-    local rotation = self.rot
-
-    -- 应用颜色和透明度
-    local color = self.color
-    local colorType = type(color)
-    local colorA, colorR, colorG, colorB
-    if colorType == "function" then
-        color = color(self)
-        colorType = type(color)
-    end
-
-    if colorType == "table" then
-        colorA = color.a or 255
-        colorR = color.r or 255
-        colorG = color.g or 255
-        colorB = color.b or 255
-    elseif colorType == "userdata" then
-        colorA, colorR, colorG, colorB = color:ARGB()
-    else
-        colorA = 255
-        colorR = 255
-        colorG = 255
-        colorB = 255
-    end
-
-    local finalColor = Color(
-            math.floor(colorA * self.alpha),
-            colorR,
-            colorG,
-            colorB
-    )
-
-    -- 渲染
-    SetImageState(self.image, self.blendMode, finalColor)
-    Render(self.image, self.x, self.y, rotation, self.scaleX, self.scaleY)
-end
-
----获取子机的角度（供外部使用，如射击）
----@return number|nil
-function Option:getAngle()
-    if self.config.angle then
-        if type(self.config.angle) == "function" then
-            return self.config.angle(self)
-        else
-            return self.config.angle
-        end
-    end
-    return nil
+    return option
 end
 
 ---辅助方法：创建定点式子机配置
@@ -232,7 +298,7 @@ end
 ---@param positions table<number, {highSpeed: {x: number, y: number}, lowSpeed: {x: number, y: number}}> 各火力等级的位置配置
 ---@param extraConfig table|nil 额外配置
 ---@return thlib.Player.OptionConfig
-function Option.createFixedOption(image, angle, positions, extraConfig)
+local function createFixedOption(image, angle, positions, extraConfig)
     extraConfig = extraConfig or {}
     return {
         image = image,
@@ -277,8 +343,13 @@ function Option.createFixedOption(image, angle, positions, extraConfig)
 
             return 0, 0
         end,
+        onAwake = extraConfig.onAwake,
         onInit = extraConfig.onInit,
+        onStart = extraConfig.onStart,
         onUpdate = extraConfig.onUpdate,
+        onLateUpdate = extraConfig.onLateUpdate,
+        onRender = extraConfig.onRender,
+        onDestroy = extraConfig.onDestroy,
         onActivate = extraConfig.onActivate,
         onDeactivate = extraConfig.onDeactivate,
     }
@@ -291,7 +362,7 @@ end
 ---@param angularSpeed number 角速度（度/帧）
 ---@param extraConfig table|nil 额外配置 {requiredPower, lerpSpeed, color, scaleX, scaleY, blendMode, rot, omega, angle, ...}
 ---@return thlib.Player.OptionConfig
-function Option.createOrbitOption(image, radius, initialAngle, angularSpeed, extraConfig)
+local function createOrbitOption(image, radius, initialAngle, angularSpeed, extraConfig)
     extraConfig = extraConfig or {}
     return {
         image = image,
@@ -316,11 +387,21 @@ function Option.createOrbitOption(image, radius, initialAngle, angularSpeed, ext
             local angle = initialAngle + opt.timer * angularSpeed
             return r * math.cos(math.rad(angle)), r * math.sin(math.rad(angle))
         end,
+        onAwake = extraConfig.onAwake,
         onInit = extraConfig.onInit,
+        onStart = extraConfig.onStart,
         onUpdate = extraConfig.onUpdate,
+        onLateUpdate = extraConfig.onLateUpdate,
+        onRender = extraConfig.onRender,
+        onDestroy = extraConfig.onDestroy,
         onActivate = extraConfig.onActivate,
         onDeactivate = extraConfig.onDeactivate,
     }
 end
 
-return Option
+return {
+    new = new,
+    Type = OptionType,
+    createFixedOption = createFixedOption,
+    createOrbitOption = createOrbitOption,
+}

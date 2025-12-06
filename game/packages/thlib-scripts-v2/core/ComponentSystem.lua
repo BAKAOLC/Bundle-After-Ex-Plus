@@ -1,21 +1,35 @@
 local ipairs = ipairs
 local pairs = pairs
+local error = error
+local string = string
+
+local TypeDef = require("core.TypeDef")
+
+-- 定义基础 Component 类型
+local ComponentType = TypeDef.create("core.Component", nil, {
+    defaults = {
+        enabled = true,
+        executePriority = 0,
+    },
+})
 
 ---@class core.Component
 ---@field enabled boolean
 ---@field executePriority number|nil update优先级，数字越大越先执行（可选，默认0）
 ---@field renderPriority number|nil render优先级（可选，默认使用executePriority）
 ---@field owner any
----@field typeName string
+---@field typeDef core.TypeDef 类型定义
 ---@field executeBefore string[]|nil update时在这些组件之前执行
 ---@field executeAfter string[]|nil update时在这些组件之后执行
 ---@field renderBefore string[]|nil render时在这些组件之前渲染
 ---@field renderAfter string[]|nil render时在这些组件之后渲染
----@field resolveDependencies fun(self: core.Component, gameObject: any)|nil 解析依赖，在此获取其他组件引用
----@field onAdd fun(self: core.Component)|nil 添加时回调，在 resolveDependencies 之后
----@field onRemove fun(self: core.Component)|nil
----@field update fun(self: core.Component)|nil
----@field render fun(self: core.Component)|nil 渲染回调
+---@field isTypeOf fun(self: core.Component, targetType: core.TypeDef|string): boolean 检查是否为指定类型或其子类型
+---@field Awake fun(self: core.Component)|nil 添加时回调，在 addComponent 时立即调用
+---@field Start fun(self: core.Component)|nil 第一次 update 之前调用，用于解析依赖
+---@field Update fun(self: core.Component)|nil 每帧更新
+---@field LateUpdate fun(self: core.Component)|nil 每帧更新后
+---@field OnRender fun(self: core.Component)|nil 渲染回调
+---@field OnDestroy fun(self: core.Component)|nil 移除时回调
 
 ---@class core.ComponentSystem
 ---@field components core.Component[] 全部组件数组
@@ -25,22 +39,28 @@ local pairs = pairs
 ---@field updateComponentCount number update组件数量
 ---@field renderComponentCount number 渲染组件数量
 ---@field componentsByType table<string, {count: number, [number]: core.Component}> 按类型索引的组件
+---@field componentAliases table<string, string> 组件别名到类型名称的映射
 ---@field sortDirty boolean 是否需要重新排序
 ---@field updateSortDirty boolean 是否需要重新排序update组件
 ---@field renderSortDirty boolean 是否需要重新排序render组件
+---@field _startedComponents table<core.Component, boolean> 已调用 Start 的组件集合
 ---@field addComponent fun(self: core.ComponentSystem, component: core.Component, componentType: string): number
 ---@field removeComponent fun(self: core.ComponentSystem, componentId: number)
 ---@field getComponents fun(self: core.ComponentSystem, componentType: string): core.Component[]|nil
 ---@field getComponent fun(self: core.ComponentSystem, componentType: string): core.Component|nil
----@field update fun(self: core.ComponentSystem)
----@field render fun(self: core.ComponentSystem)
+---@field Start fun(self: core.ComponentSystem) 处理所有组件的 Start 生命周期（第一次调用时）
+---@field Update fun(self: core.ComponentSystem) 更新所有组件的 Update 生命周期
+---@field LateUpdate fun(self: core.ComponentSystem) 更新所有组件的 LateUpdate 生命周期
+---@field OnRender fun(self: core.ComponentSystem) 渲染所有组件
 ---@field clear fun(self: core.ComponentSystem)
 ---@field setComponentEnabled fun(self: core.ComponentSystem, componentId: number, enabled: boolean)
 
 ---创建组件系统实例
+---@param owner table 拥有此组件系统的对象（通常是 GameObject）
 ---@return core.ComponentSystem
-local function new()
+local function new(owner)
     local system = {
+        owner = owner,
         components = {},
         updateComponents = nil, -- 延迟创建
         renderComponents = nil, -- 延迟创建
@@ -48,37 +68,82 @@ local function new()
         updateComponentCount = 0,
         renderComponentCount = 0,
         componentsByType = {},
+        componentAliases = {},
         sortDirty = false,
         updateSortDirty = false,
         renderSortDirty = false,
+        _startedComponents = {},
     }
 
     ---添加组件
-    ---@param component core.Component 组件实例
-    ---@param componentType string 组件类型标识
+    ---@param component core.Component 组件实例（必须包含 typeDef）
+    ---@param componentType string|nil 组件类型标识（可选，用于向后兼容，如果 component 没有 typeDef 则使用）
     ---@return number componentId 组件ID
     function system:addComponent(component, componentType)
+        -- 检查 component 是否已经挂载在其他对象上
+        if component.owner and component.owner ~= self.owner then
+            local componentTypeName = (component.typeDef and component.typeDef.typeName) or component.typeName or componentType or "unknown"
+            error(string.format(
+                    "Cannot add component '%s' to object: component is already attached to another object",
+                    componentTypeName
+            ), 2)
+        end
+
+        -- 检查组件是否有类型定义
+        if not component.typeDef then
+            error("Component must have typeDef. Use TypeDef.instantiate() to create components.", 2)
+        end
+
+        -- 设置 owner
+        component.owner = self.owner
+
+        -- 添加 isTypeOf 方法（如果还没有）
+        if not component.isTypeOf then
+            function component:isTypeOf(targetType)
+                if not self.typeDef then
+                    return false
+                end
+                return TypeDef.isTypeOf(self.typeDef, targetType)
+            end
+        end
+
         local count = self.componentCount + 1
         self.componentCount = count
         self.components[count] = component
 
-        -- 按类型分组
-        if componentType then
-            local typeList = self.componentsByType[componentType]
+        -- 按类型分组（使用 typeName）
+        local typeName = component.typeDef.typeName
+        if typeName then
+            local typeList = self.componentsByType[typeName]
             if not typeList then
                 typeList = { count = 0 }
-                self.componentsByType[componentType] = typeList
+                self.componentsByType[typeName] = typeList
             end
             local typeCount = typeList.count + 1
             typeList.count = typeCount
             typeList[typeCount] = component
+
+            -- 注册组件别名（如果组件定义了 alias）
+            if component.alias then
+                if type(component.alias) == "string" then
+                    self.componentAliases[component.alias] = typeName
+                elseif type(component.alias) == "table" then
+                    for _, alias in ipairs(component.alias) do
+                        self.componentAliases[alias] = typeName
+                    end
+                end
+            end
         end
 
         self.sortDirty = true
         self.updateSortDirty = true
         self.renderSortDirty = true
 
-        -- 注意：不在这里调用 onAdd，而是在 resolveComponents 之后调用
+        -- 立即调用 Awake 生命周期
+        local awake = component.Awake
+        if awake then
+            awake(component)
+        end
 
         return count
     end
@@ -91,11 +156,28 @@ local function new()
             return
         end
 
-        if component.onRemove then
-            component:onRemove()
+        -- 调用 OnDestroy 生命周期
+        local onDestroy = component.OnDestroy
+        if onDestroy then
+            onDestroy(component)
         end
 
+        -- 清理别名
+        if component.alias and component.typeDef and component.typeDef.typeName then
+            if type(component.alias) == "string" then
+                self.componentAliases[component.alias] = nil
+            elseif type(component.alias) == "table" then
+                for _, alias in ipairs(component.alias) do
+                    self.componentAliases[alias] = nil
+                end
+            end
+        end
+
+        self._startedComponents[component] = nil
         self.components[componentId] = nil
+
+        -- 清理 owner 引用
+        component.owner = nil
 
         -- 需要在update时清理
         self.sortDirty = true
@@ -110,19 +192,52 @@ local function new()
         return self.componentsByType[componentType]
     end
 
-    ---根据类型获取第一个组件
+    ---根据类型获取第一个组件（支持别名）
     ---@param componentType string
     ---@return core.Component|nil
     function system:getComponent(componentType)
+        -- 先尝试直接查找
         local list = self.componentsByType[componentType]
         if list and list.count > 0 then
             return list[1]
         end
+        -- 尝试通过别名查找
+        local actualType = self.componentAliases[componentType]
+        if actualType then
+            list = self.componentsByType[actualType]
+            if list and list.count > 0 then
+                return list[1]
+            end
+        end
         return nil
     end
 
-    ---更新所有组件
-    function system:update()
+    ---处理所有组件的 Start 生命周期（第一次调用时）
+    function system:Start()
+        -- 清理被删除的组件
+        if self.sortDirty then
+            self:_compact()
+            self:_sortComponents()
+            self.sortDirty = false
+        end
+
+        -- 处理所有组件的 Start 生命周期（在第一次调用时）
+        local components = self.components
+        local count = self.componentCount
+        for i = 1, count do
+            local component = components[i]
+            if component and not self._startedComponents[component] then
+                self._startedComponents[component] = true
+                local start = component.Start
+                if start then
+                    start(component)
+                end
+            end
+        end
+    end
+
+    ---更新所有组件的 Update 生命周期
+    function system:Update()
         -- 清理被删除的组件
         if self.sortDirty then
             self:_compact()
@@ -136,20 +251,46 @@ local function new()
             self.updateSortDirty = false
         end
 
-        local components = self.updateComponents
-        local count = self.updateComponentCount
+        local updateComponents = self.updateComponents
+        local updateCount = self.updateComponentCount
 
-        -- 只遍历有update方法的组件
-        for i = 1, count do
-            local component = components[i]
+        -- 调用 Update 生命周期
+        for i = 1, updateCount do
+            local component = updateComponents[i]
             if component and component.enabled then
-                component:update()
+                local update = component.Update
+                if update then
+                    update(component)
+                end
+            end
+        end
+    end
+
+    ---更新所有组件的 LateUpdate 生命周期
+    function system:LateUpdate()
+        -- 如果需要，构建并排序update组件列表
+        if self.updateSortDirty or not self.updateComponents then
+            self:_sortUpdateComponents()
+            self.updateSortDirty = false
+        end
+
+        local updateComponents = self.updateComponents
+        local updateCount = self.updateComponentCount
+
+        -- 调用 LateUpdate 生命周期
+        for i = 1, updateCount do
+            local component = updateComponents[i]
+            if component and component.enabled then
+                local lateUpdate = component.LateUpdate
+                if lateUpdate then
+                    lateUpdate(component)
+                end
             end
         end
     end
 
     ---渲染所有组件
-    function system:render()
+    function system:OnRender()
         -- 如果需要，构建并排序render组件列表
         if self.renderSortDirty or not self.renderComponents then
             self:_sortRenderComponents()
@@ -159,11 +300,14 @@ local function new()
         local components = self.renderComponents
         local count = self.renderComponentCount
 
-        -- 只遍历有render方法的组件
+        -- 调用 OnRender 生命周期
         for i = 1, count do
             local component = components[i]
             if component and component.enabled then
-                component:render()
+                local onRender = component.OnRender
+                if onRender then
+                    onRender(component)
+                end
             end
         end
     end
@@ -177,14 +321,26 @@ local function new()
             return
         end
 
-        -- 构建组件名称到组件的映射
+        -- 构建组件名称到组件的映射（包括别名）
         local nameToComp = {}
         local nameToIndex = {}
         for i = 1, count do
             local comp = components[i]
-            if comp and comp.typeName then
-                nameToComp[comp.typeName] = comp
-                nameToIndex[comp.typeName] = i
+            if comp and comp.typeDef and comp.typeDef.typeName then
+                local typeName = comp.typeDef.typeName
+                nameToComp[typeName] = comp
+                nameToIndex[typeName] = i
+
+                -- 添加别名映射
+                if comp.alias then
+                    if type(comp.alias) == "string" then
+                        nameToComp[comp.alias] = comp
+                    elseif type(comp.alias) == "table" then
+                        for _, alias in ipairs(comp.alias) do
+                            nameToComp[alias] = comp
+                        end
+                    end
+                end
             end
         end
 
@@ -194,16 +350,18 @@ local function new()
 
         for i = 1, count do
             local comp = components[i]
-            if comp and comp.typeName then
-                inDegree[comp.typeName] = 0
-                adjList[comp.typeName] = {}
+            if comp and comp.typeDef and comp.typeDef.typeName then
+                local typeName = comp.typeDef.typeName
+                inDegree[typeName] = 0
+                adjList[typeName] = {}
             end
         end
 
         -- 处理 executeAfter 和 executeBefore
         for i = 1, count do
             local comp = components[i]
-            if comp and comp.typeName then
+            if comp and comp.typeDef and comp.typeDef.typeName then
+                local typeName = comp.typeDef.typeName
                 -- executeAfter: 这个组件要在某些组件之后执行
                 -- 意味着：那些组件 -> 这个组件（依赖）
                 if comp.executeAfter then
@@ -213,8 +371,8 @@ local function new()
                             if not adjList[afterName] then
                                 adjList[afterName] = {}
                             end
-                            adjList[afterName][comp.typeName] = true
-                            inDegree[comp.typeName] = inDegree[comp.typeName] + 1
+                            adjList[afterName][typeName] = true
+                            inDegree[typeName] = inDegree[typeName] + 1
                         end
                     end
                 end
@@ -225,7 +383,7 @@ local function new()
                     for _, beforeName in ipairs(comp.executeBefore) do
                         if nameToComp[beforeName] then
                             -- comp 要在 beforeName 之前
-                            adjList[comp.typeName][beforeName] = true
+                            adjList[typeName][beforeName] = true
                             inDegree[beforeName] = inDegree[beforeName] + 1
                         end
                     end
@@ -381,12 +539,24 @@ local function new()
 
     ---拓扑排序
     function system:_topologicalSort(components, count, priorityField, beforeField, afterField)
-        -- 建立名称到组件的映射
+        -- 建立名称到组件的映射（包括别名）
         local nameToComp = {}
         for i = 1, count do
             local comp = components[i]
-            if comp.typeName then
-                nameToComp[comp.typeName] = comp
+            if comp and comp.typeDef and comp.typeDef.typeName then
+                local typeName = comp.typeDef.typeName
+                nameToComp[typeName] = comp
+
+                -- 添加别名映射
+                if comp.alias then
+                    if type(comp.alias) == "string" then
+                        nameToComp[comp.alias] = comp
+                    elseif type(comp.alias) == "table" then
+                        for _, alias in ipairs(comp.alias) do
+                            nameToComp[alias] = comp
+                        end
+                    end
+                end
             end
         end
 
@@ -396,16 +566,17 @@ local function new()
 
         for i = 1, count do
             local comp = components[i]
-            if comp.typeName then
-                inDegree[comp.typeName] = 0
+            if comp and comp.typeDef and comp.typeDef.typeName then
+                local typeName = comp.typeDef.typeName
+                inDegree[typeName] = 0
             end
         end
 
         -- 构建依赖关系
         for i = 1, count do
             local comp = components[i]
-            local name = comp.typeName
-            if name then
+            if comp and comp.typeDef and comp.typeDef.typeName then
+                local name = comp.typeDef.typeName
                 -- before: 我在这些之前
                 local before = comp[beforeField]
                 if before then
@@ -489,7 +660,7 @@ local function new()
     function system:_sortUpdateComponents()
         local components, count = self:_sortComponentsByType(
                 function(comp)
-                    return comp.update ~= nil
+                    return comp.Update ~= nil or comp.LateUpdate ~= nil
                 end,
                 "executePriority",
                 "executeBefore",
@@ -503,7 +674,7 @@ local function new()
     function system:_sortRenderComponents()
         local components, count = self:_sortComponentsByType(
                 function(comp)
-                    return comp.render ~= nil
+                    return comp.OnRender ~= nil
                 end,
                 "renderPriority",
                 "renderBefore",
@@ -530,16 +701,31 @@ local function new()
         self.components = newComponents
         self.componentCount = newCount
 
-        -- 重建类型索引
+        -- 重建类型索引和别名
         self.componentsByType = {}
+        self.componentAliases = {}
         for i = 1, newCount do
             local comp = newComponents[i]
-            local typeName = comp.typeName
-            if typeName then
+            if comp and comp.typeDef and comp.typeDef.typeName then
+                local typeName = comp.typeDef.typeName
                 local typeList = self.componentsByType[typeName]
                 if not typeList then
                     typeList = { count = 0 }
                     self.componentsByType[typeName] = typeList
+                end
+                local typeCount = typeList.count + 1
+                typeList.count = typeCount
+                typeList[typeCount] = comp
+
+                -- 注册组件别名
+                if comp.alias then
+                    if type(comp.alias) == "string" then
+                        self.componentAliases[comp.alias] = typeName
+                    elseif type(comp.alias) == "table" then
+                        for _, alias in ipairs(comp.alias) do
+                            self.componentAliases[alias] = typeName
+                        end
+                    end
                 end
                 local typeCount = typeList.count + 1
                 typeList.count = typeCount
@@ -555,14 +741,18 @@ local function new()
 
         for i = 1, count do
             local component = components[i]
-            if component and component.onRemove then
-                component:onRemove()
+            if component then
+                local onDestroy = component.OnDestroy
+                if onDestroy then
+                    onDestroy(component)
+                end
             end
         end
 
         self.components = {}
         self.componentCount = 0
         self.componentsByType = {}
+        self._startedComponents = {}
     end
 
     ---启用/禁用组件
@@ -580,5 +770,6 @@ end
 
 return {
     new = new,
+    ComponentType = ComponentType,
 }
 

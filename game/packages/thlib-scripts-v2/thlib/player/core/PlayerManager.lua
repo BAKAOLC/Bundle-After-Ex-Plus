@@ -34,20 +34,28 @@ function PlayerManager.new(maxPlayers)
 end
 
 ---创建并添加一个玩家
----@param slot number 玩家槽位 (1-based)
+---@param slot number|nil 玩家槽位 (1-based)，如果为 nil 则自动查找第一个可用槽位
 ---@param playerConfig table|nil 玩家配置
 ---@param componentConfigs table|nil 组件配置
 ---@return thlib.Player|nil player 创建的玩家实例，失败返回nil
 ---@return string|nil error 错误信息
 function PlayerManager:createPlayer(slot, playerConfig, componentConfigs)
+    -- 如果没有提供 slot，自动查找第一个可用槽位
+    if not slot then
+        slot = self:getFirstAvailableSlot()
+        if not slot then
+            return nil, string.format("No available slot (max: %d)", self.maxPlayers)
+        end
+    end
+
     -- 验证槽位
     if slot < 1 or slot > self.maxPlayers then
-        return nil, string.format("槽位 %d 超出范围 (1-%d)", slot, self.maxPlayers)
+        return nil, string.format("Slot %d is out of range (1-%d)", slot, self.maxPlayers)
     end
 
     -- 检查槽位是否已被占用
     if self.players[slot] then
-        return nil, string.format("槽位 %d 已被占用", slot)
+        return nil, string.format("Slot %d is already occupied", slot)
     end
 
     -- 合并默认配置

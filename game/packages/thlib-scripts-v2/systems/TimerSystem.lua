@@ -1,65 +1,73 @@
 local pairs = pairs
-
-local Class = plus.Class
+local setmetatable = setmetatable
 
 ---@class systems.Timer
 ---@field name string
 ---@field interval number 间隔时间（帧数）
 ---@field remainingTime number 剩余冷却时间
 ---@field active boolean 是否激活
-local Timer = Class()
 
+---创建新的 Timer 实例
 ---@param name string
 ---@param interval number
-function Timer:init(name, interval)
-    self.name = name
-    self.interval = interval or 0
-    self.remainingTime = 0
-    self.active = true
-end
+---@return systems.Timer
+local function newTimer(name, interval)
+    local timer = {
+        name = name,
+        interval = interval or 0,
+        remainingTime = 0,
+        active = true,
+    }
 
----更新计时器
-function Timer:update()
-    if not self.active then
-        return
+    ---更新计时器
+    function timer:update()
+        if not self.active then
+            return
+        end
+
+        if self.remainingTime > 0 then
+            self.remainingTime = self.remainingTime - 1
+        end
     end
 
-    if self.remainingTime > 0 then
-        self.remainingTime = self.remainingTime - 1
+    ---检查是否就绪
+    ---@return boolean
+    function timer:isReady()
+        return self.active and self.remainingTime <= 0
     end
-end
 
----检查是否就绪
----@return boolean
-function Timer:isReady()
-    return self.active and self.remainingTime <= 0
-end
+    ---触发计时器（开始冷却）
+    function timer:trigger()
+        self.remainingTime = self.interval
+    end
 
----触发计时器（开始冷却）
-function Timer:trigger()
-    self.remainingTime = self.interval
-end
+    ---重置计时器
+    function timer:reset()
+        self.remainingTime = 0
+    end
 
----重置计时器
-function Timer:reset()
-    self.remainingTime = 0
-end
+    ---设置间隔
+    ---@param interval number
+    function timer:setInterval(interval)
+        self.interval = interval
+    end
 
----设置间隔
----@param interval number
-function Timer:setInterval(interval)
-    self.interval = interval
+    return timer
 end
 
 ---@class systems.TimerSystem
 ---@field owner any
 ---@field timers table<string, systems.Timer>
-local TimerSystem = Class()
+local TimerSystem = {}
 
+---创建新的TimerSystem实例
 ---@param owner any
-function TimerSystem:init(owner)
-    self.owner = owner
-    self.timers = {}
+---@return systems.TimerSystem
+function TimerSystem.new(owner)
+    return setmetatable({
+        owner = owner,
+        timers = {},
+    }, { __index = TimerSystem })
 end
 
 ---注册计时器
@@ -67,7 +75,7 @@ end
 ---@param interval number
 ---@return systems.Timer
 function TimerSystem:registerTimer(name, interval)
-    local timer = Timer(name, interval)
+    local timer = newTimer(name, interval)
     self.timers[name] = timer
     return timer
 end
@@ -131,15 +139,6 @@ end
 ---清空所有计时器
 function TimerSystem:clear()
     self.timers = {}
-end
-
----创建新的TimerSystem实例
----@param owner any
----@return systems.TimerSystem
-function TimerSystem.new(owner)
-    local instance = setmetatable({}, { __index = TimerSystem })
-    instance:init(owner)
-    return instance
 end
 
 return TimerSystem

@@ -1,4 +1,5 @@
 local pairs = pairs
+local setmetatable = setmetatable
 
 ---倍率系统
 
