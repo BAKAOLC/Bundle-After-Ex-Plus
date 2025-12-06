@@ -12,7 +12,6 @@ local ComponentSystem = require("core.ComponentSystem")
 ---@field data table|nil 自定义数据
 
 ---@class components.DamageComponent : core.Component
----@field onDamageDealt function|nil 造成伤害回调 function(damageComponent, target, damageInfo, actualDamage)
 ---@field baseDamage number|nil 基础伤害值（可选，用于自动计算）
 
 -- 定义组件类型
@@ -21,7 +20,6 @@ local DamageComponentType = TypeDef.create("components.DamageComponent", Compone
         enabled = true,
         executePriority = 80,
         alias = "damage",
-        onDamageDealt = nil,
         baseDamage = nil,
     },
     methods = {
@@ -93,9 +91,9 @@ local DamageComponentType = TypeDef.create("components.DamageComponent", Compone
             -- 对目标造成伤害
             local actualDamage = receiverComp:takeDamage(damageInfo)
 
-            -- 通知造成伤害
-            if actualDamage and actualDamage > 0 and self.onDamageDealt then
-                self.onDamageDealt(self, target, damageInfo, actualDamage)
+            -- 通过事件系统通知造成伤害
+            if actualDamage and actualDamage > 0 and self.owner and self.owner._dispatchEvent then
+                self.owner:_dispatchEvent("onDamageDealt", self, target, damageInfo, actualDamage)
             end
 
             return actualDamage

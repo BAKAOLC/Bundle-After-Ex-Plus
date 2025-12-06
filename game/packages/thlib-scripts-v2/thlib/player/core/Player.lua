@@ -5,11 +5,9 @@ local table = table
 local GameObject = require("core.GameObject")
 local TypeDef = require("core.TypeDef")
 local PlayerConfig = require("thlib.player.config.PlayerConfig")
-local createEventDispatcher = require("foundation.EventDispatcher")
 
 ---@class thlib.Player : core.GameObject
 ---@field config thlib.Player.Config
----@field listener foundation.EventDispatcher 事件监听器
 ---@field slot number
 ---@field locked boolean
 ---@field slow number
@@ -36,9 +34,6 @@ local PlayerType = TypeDef.create("thlib.Player", GameObject.Type, {
     },
     methods = {
         Awake = function(self)
-            -- 初始化事件系统
-            self.listener = createEventDispatcher()
-
             -- 触发初始化事件
             self:_dispatchEvent("onInit")
         end,
@@ -70,19 +65,6 @@ local PlayerType = TypeDef.create("thlib.Player", GameObject.Type, {
             self:_dispatchEvent("onKill")
         end,
 
-        _dispatchEvent = function(self, eventName, ...)
-            self.listener:DispatchEvent(eventName, self, ...)
-            return false
-        end,
-
-        registerEvent = function(self, eventName, name, priority, callback)
-            self.listener:RegisterEvent(eventName, name, priority, callback)
-        end,
-
-        unregisterEvent = function(self, eventName, name)
-            self.listener:UnregisterEvent(eventName, name)
-        end,
-
         setupComponents = function(self, componentConfigs)
             componentConfigs = componentConfigs or {}
 
@@ -90,6 +72,8 @@ local PlayerType = TypeDef.create("thlib.Player", GameObject.Type, {
             local TimerComp = require("components.TimerComponent")
             local BuffComp = require("components.BuffComponent")
             local ModifierComp = require("components.ModifierComponent")
+            local HealthComp = require("components.HealthComponent")
+            local DamageReceiverComp = require("components.DamageReceiverComponent")
 
             -- 玩家组件
             local StateComp = require("thlib.player.components.StateComponent")
@@ -167,6 +151,25 @@ local PlayerType = TypeDef.create("thlib.Player", GameObject.Type, {
                 self:addComponent(
                         ModifierComp.create(componentConfigs.modifier or {}),
                         ModifierComp.Type.typeName
+                )
+            end
+
+            -- 添加血量组件（默认启用）
+            if componentConfigs.health ~= false then
+                self:addComponent(
+                        HealthComp.create(componentConfigs.health or {
+                            maxHealth = 1,
+                            currentHealth = 1,
+                        }),
+                        HealthComp.Type.typeName
+                )
+            end
+
+            -- 添加伤害接收组件（默认启用）
+            if componentConfigs.damageReceiver ~= false then
+                self:addComponent(
+                        DamageReceiverComp.create(componentConfigs.damageReceiver or {}),
+                        DamageReceiverComp.Type.typeName
                 )
             end
 

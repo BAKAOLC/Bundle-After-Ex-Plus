@@ -79,8 +79,18 @@ local CollisionComponentType = TypeDef.create("thlib.Player.CollisionComponent",
         end,
 
         triggerHit = function(self, player, other)
-            -- 触发决死状态
-            player.__shouldEnterDeathSpell = true
+            -- 通过 DamageReceiverComponent 造成伤害（1点伤害，因为玩家只有1血）
+            local damageReceiverComp = player:getComponent("damageReceiver")
+            if not damageReceiverComp then
+                return
+            end
+
+            -- 造成1点伤害，确保一碰就死
+            local actualDamage = damageReceiverComp:takeDamage(1, other)
+            -- 如果伤害被阻挡（无敌状态），则不处理
+            if actualDamage == 0 then
+                return
+            end
 
             -- 删除子弹（如果 other 存在）
             if other and self.deleteOnHit and other.group == GROUP_ENEMY_BULLET then
@@ -95,8 +105,15 @@ local CollisionComponentType = TypeDef.create("thlib.Player.CollisionComponent",
 
         handleKill = function(self, player)
             if player.__currentState == "normal" then
-                -- Kill 事件没有明确的击杀者，传 nil
-                self:triggerHit(player, nil)
+                -- Kill 事件：直接清空血量（会触发血量耗尽事件，由 StateComponent 处理死亡）
+                local healthComp = player:getComponent("health")
+                if healthComp then
+                    healthComp:setHealth(0)
+                end
+                -- 播放音效
+                if self.playSoundOnHit then
+                    PlaySound("pldead00", 0.5)
+                end
             end
             return true
         end,

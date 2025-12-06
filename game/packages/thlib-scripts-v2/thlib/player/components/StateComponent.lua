@@ -61,9 +61,9 @@ local StateComponentType = TypeDef.create("thlib.Player.StateComponent", Compone
                 self.stateTimers[self.currentState] = 0
             end)
 
-            -- 监听Kill事件来触发状态转换
-            player:registerEvent("onKill", "state_killHandler", 5, function(p)
-                self:handleHit()
+            -- 监听血量耗尽事件
+            player:registerEvent("onHealthDepleted", "state_healthDepleted", 10, function(p, healthComp)
+                self:handleHealthDepleted()
             end)
         end,
 
@@ -73,7 +73,7 @@ local StateComponentType = TypeDef.create("thlib.Player.StateComponent", Compone
             player:unregisterEvent("onStateEnter_deathSpell", "state_deathSpell")
             player:unregisterEvent("onStateEnter_dying", "state_dying")
             player:unregisterEvent("onStateEnter_respawning", "state_respawning")
-            player:unregisterEvent("onKill", "state_killHandler")
+            player:unregisterEvent("onHealthDepleted", "state_healthDepleted")
         end,
 
         Update = function(self)
@@ -92,7 +92,8 @@ local StateComponentType = TypeDef.create("thlib.Player.StateComponent", Compone
             end
         end,
 
-        handleHit = function(self)
+        -- 处理血量耗尽
+        handleHealthDepleted = function(self)
             if self.currentState == "normal" then
                 if self.config.enableDeathSpell then
                     self:requestTransition("deathSpell")
@@ -143,6 +144,11 @@ local StateComponentType = TypeDef.create("thlib.Player.StateComponent", Compone
         -- 决死成功（放雷救命）
         saveFromDeathSpell = function(self)
             if self.currentState == "deathSpell" then
+                -- 成功放符卡救命，恢复到 1 血
+                local healthComp = self.owner:getComponent("health")
+                if healthComp then
+                    healthComp:setHealth(1)
+                end
                 self:requestTransition("normal")
             end
         end,

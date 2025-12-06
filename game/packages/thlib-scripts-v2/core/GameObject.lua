@@ -3,6 +3,7 @@ local error = error
 
 local GameObjectMixin = require("core.GameObjectMixin")
 local TypeDef = require("core.TypeDef")
+local createEventDispatcher = require("foundation.EventDispatcher")
 
 ---@type lstg.GlobalEventDispatcher
 local gameEventDispatcher = lstg.globalEventDispatcher
@@ -14,6 +15,7 @@ local GameObjectType = TypeDef.create("core.GameObject")
 ---@field typeDef core.TypeDef 类型定义
 ---@field componentSystem core.ComponentSystem 组件系统
 ---@field _lifecycleStarted boolean 生命周期是否已开始（Start 是否已调用）
+---@field listener foundation.EventDispatcher|nil 事件监听器（延迟初始化）
 ---@field addComponent fun(self: core.GameObject, component: core.Component, componentType: string): number
 ---@field removeComponent fun(self: core.GameObject, componentId: number)
 ---@field getComponent fun(self: core.GameObject, componentType: string): core.Component|nil
@@ -23,6 +25,9 @@ local GameObjectType = TypeDef.create("core.GameObject")
 ---@field lateUpdateComponents fun(self: core.GameObject) 更新组件 LateUpdate 生命周期
 ---@field renderComponents fun(self: core.GameObject) 渲染组件
 ---@field isTypeOf fun(self: core.GameObject, typeName: string): boolean 检查是否为指定类型或其子类型
+---@field _dispatchEvent fun(self: core.GameObject, eventName: string, ...): boolean 分发事件
+---@field registerEvent fun(self: core.GameObject, eventName: string, name: string, priority: number, callback: function) 注册事件监听
+---@field unregisterEvent fun(self: core.GameObject, eventName: string, name: string) 取消注册事件监听
 ---@field Awake fun(self: core.GameObject)|nil 对象创建后立即调用（在 init 中）
 ---@field Start fun(self: core.GameObject)|nil 第一次 frame 之前调用
 ---@field Update fun(self: core.GameObject)|nil 每帧更新（在组件更新之前）
@@ -42,6 +47,46 @@ function GameObject:init()
 
     -- 初始化生命周期状态
     self._lifecycleStarted = false
+
+    -- 事件系统延迟初始化（只在需要时创建）
+    self.listener = nil
+end
+
+---获取或创建事件监听器（延迟初始化）
+---@return foundation.EventDispatcher
+function GameObject:_getListener()
+    if not self.listener then
+        self.listener = createEventDispatcher()
+    end
+    return self.listener
+end
+
+---分发事件
+---@param eventName string 事件名称
+---@vararg any 事件参数
+---@return boolean
+function GameObject:_dispatchEvent(eventName, ...)
+    local listener = self:_getListener()
+    return listener:DispatchEvent(eventName, self, ...)
+end
+
+---注册事件监听
+---@param eventName string 事件名称
+---@param name string 监听器名称
+---@param priority number 优先级
+---@param callback function 回调函数
+function GameObject:registerEvent(eventName, name, priority, callback)
+    local listener = self:_getListener()
+    listener:RegisterEvent(eventName, name, priority, callback)
+end
+
+---取消注册事件监听
+---@param eventName string 事件名称
+---@param name string 监听器名称
+function GameObject:unregisterEvent(eventName, name)
+    if self.listener then
+        self.listener:UnregisterEvent(eventName, name)
+    end
 end
 
 ---帧更新

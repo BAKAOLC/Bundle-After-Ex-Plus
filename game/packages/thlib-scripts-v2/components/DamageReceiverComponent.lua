@@ -5,8 +5,6 @@ local TypeDef = require("core.TypeDef")
 local ComponentSystem = require("core.ComponentSystem")
 
 ---@class components.DamageReceiverComponent : core.Component
----@field onDamageReceived function|nil 接收伤害回调 function(damageReceiverComponent, source, damageInfo, actualDamage)
----@field onDamageBlocked function|nil 伤害被阻挡回调 function(damageReceiverComponent, source, damageInfo)
 
 -- 定义组件类型
 local DamageReceiverComponentType = TypeDef.create("components.DamageReceiverComponent", ComponentSystem.ComponentType, {
@@ -14,8 +12,6 @@ local DamageReceiverComponentType = TypeDef.create("components.DamageReceiverCom
         enabled = true,
         executePriority = 85,
         alias = "damageReceiver",
-        onDamageReceived = nil,
-        onDamageBlocked = nil,
     },
     methods = {
         -- 接收伤害
@@ -56,8 +52,9 @@ local DamageReceiverComponentType = TypeDef.create("components.DamageReceiverCom
 
             -- 检查是否被阻挡
             if damageInfo.canBlock and self:_checkBlocked(damageInfo) then
-                if self.onDamageBlocked then
-                    self.onDamageBlocked(self, damageInfo.source, damageInfo)
+                -- 通过事件系统通知伤害被阻挡
+                if self.owner and self.owner._dispatchEvent then
+                    self.owner:_dispatchEvent("onDamageBlocked", self, damageInfo.source, damageInfo)
                 end
                 return 0
             end
@@ -77,9 +74,9 @@ local DamageReceiverComponentType = TypeDef.create("components.DamageReceiverCom
             -- 应用伤害
             local actualDamage = healthComp:takeDamage(finalDamage, damageInfo.source)
 
-            -- 通知接收伤害
-            if self.onDamageReceived then
-                self.onDamageReceived(self, damageInfo.source, damageInfo, actualDamage)
+            -- 通过事件系统通知接收伤害
+            if self.owner and self.owner._dispatchEvent then
+                self.owner:_dispatchEvent("onDamageReceived", self, damageInfo.source, damageInfo, actualDamage)
             end
 
             return actualDamage

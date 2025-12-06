@@ -170,10 +170,19 @@ local HealthComponentType = TypeDef.create("components.HealthComponent", Compone
                 self.onHealthChanged(self, oldHealth, newHealth, delta)
             end
 
+            -- 通过事件系统通知血量变化
+            if self.owner and self.owner._dispatchEvent then
+                self.owner:_dispatchEvent("onHealthChanged", self, oldHealth, newHealth, delta)
+            end
+
             -- 血量耗尽
             if newHealth <= 0 and oldHealth > 0 then
                 if self.onHealthDepleted then
                     self.onHealthDepleted(self)
+                end
+                -- 通过事件系统通知血量耗尽
+                if self.owner and self.owner._dispatchEvent then
+                    self.owner:_dispatchEvent("onHealthDepleted", self)
                 end
             end
 
@@ -181,6 +190,10 @@ local HealthComponentType = TypeDef.create("components.HealthComponent", Compone
             if newHealth >= self.maxHealth and oldHealth < self.maxHealth then
                 if self.onHealthFull then
                     self.onHealthFull(self)
+                end
+                -- 通过事件系统通知血量回满
+                if self.owner and self.owner._dispatchEvent then
+                    self.owner:_dispatchEvent("onHealthFull", self)
                 end
             end
         end,

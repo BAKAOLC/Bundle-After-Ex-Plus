@@ -76,6 +76,15 @@ function Presets.default()
             }
         },
 
+        -- 血量组件配置
+        health = {
+            maxHealth = 1,
+            currentHealth = 1,
+        },
+
+        -- 伤害接收组件配置
+        damageReceiver = {},
+
         -- 碰撞处理（默认启用，无需配置）
         collision = {},
 
