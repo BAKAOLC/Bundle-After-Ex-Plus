@@ -4,6 +4,9 @@ local error = error
 local GameObjectMixin = require("core.GameObjectMixin")
 local TypeDef = require("core.TypeDef")
 
+---@type lstg.GlobalEventDispatcher
+local gameEventDispatcher = lstg.globalEventDispatcher
+
 -- 定义基础 GameObject 类型
 local GameObjectType = TypeDef.create("core.GameObject")
 
@@ -63,15 +66,6 @@ function GameObject:frame()
 
     -- 更新组件 Update 生命周期
     self:updateComponents()
-
-    -- 调用 LateUpdate 生命周期（在组件更新之后）
-    local lateUpdate = self.LateUpdate
-    if lateUpdate then
-        lateUpdate(self)
-    end
-
-    -- 更新组件 LateUpdate 生命周期
-    self:lateUpdateComponents()
 end
 
 ---渲染
@@ -152,6 +146,54 @@ function GameObject:isTypeOf(targetType)
     end
     return TypeDef.isTypeOf(self.typeDef, targetType)
 end
+
+--region LateUpdate System
+---LateUpdate 系统
+---在 GameState.AfterObjFrame 事件中执行所有 GameObject 的 LateUpdate
+local lateUpdateSystem = {
+    initialized = false,
+}
+
+---初始化 LateUpdate 系统
+function lateUpdateSystem:init()
+    if self.initialized then
+        return
+    end
+    self.initialized = true
+
+    gameEventDispatcher:RegisterEvent("GameState.AfterObjFrame",
+            "core.GameObject.LateUpdateSystem.on_GameState_AfterObjFrame", 0,
+            function()
+                self:on_GameState_AfterObjFrame()
+            end)
+end
+
+---在 GameState.AfterObjFrame 事件中执行所有 GameObject 的 LateUpdate
+function lateUpdateSystem:on_GameState_AfterObjFrame()
+    -- 遍历所有对象
+    for obj in lstg.ObjList(-1) do
+        -- 检查对象是否有效
+        if lstg.IsValid(obj) then
+            -- 检查是否为 GameObject 类型（通过检查是否有 typeDef 和 isTypeOf 方法）
+            if obj.typeDef and obj.isTypeOf and obj:isTypeOf(GameObjectType) then
+                -- 调用 GameObject 的 LateUpdate 生命周期
+                local lateUpdate = obj.LateUpdate
+                if lateUpdate then
+                    lateUpdate(obj)
+                end
+
+                -- 更新组件 LateUpdate 生命周期
+                if obj.lateUpdateComponents then
+                    obj:lateUpdateComponents()
+                end
+            end
+        end
+    end
+end
+
+-- 自动初始化 LateUpdate 系统
+lateUpdateSystem:init()
+--endregion
 
 return {
     _class = GameObject,
