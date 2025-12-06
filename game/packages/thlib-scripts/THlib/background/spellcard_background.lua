@@ -3,7 +3,7 @@ local pairs = pairs
 local table = table
 local unpack = unpack or table.unpack
 local lstg = lstg
-local AttributeProxy = require("foundation.AttributeProxy")
+local AttributeProxy = require("core.AttributeProxy")
 local emptyFunction = function()
 end
 local emptyColor = lstg.Color(0, 0, 0, 0)
