@@ -8,7 +8,7 @@ local createEventDispatcher = require("foundation.EventDispatcher")
 
 ---@class thlib.Player : lstg.GameObject
 ---@field config thlib.Player.Config
----@field listener core.EventDispatcher 事件监听器
+---@field listener foundation.EventDispatcher 事件监听器
 ---@field componentSystem core.ComponentSystem
 ---@field slot number
 ---@field locked boolean

@@ -21,7 +21,7 @@ end
 local function compareEventPriority(a, b)
     if a.priority and b.priority then
         return b.priority < a.priority
-    elseif b.priority then
+    elseif a.priority then
         return true
     else
         return false
@@ -104,7 +104,7 @@ function M:UnregisterEvent(group, name)
     if data then
         data.priority = nil
         sortEvent(self.data[group])
-        table.remove(self.data[group], 1)
+        table.remove(self.data[group])
         self.data[group][name] = nil
     end
 end
