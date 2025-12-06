@@ -277,7 +277,7 @@ end
 ---随机获取一个玩家
 ---@return thlib.Player|nil
 function PlayerManager:getRandomPlayer()
-    return ObjectManager.getRandomObject(self.playerList)
+    return ObjectHelper.getRandomObject(self.playerList)
 end
 
 ---获取距离指定位置最近的玩家
@@ -289,7 +289,7 @@ function PlayerManager:getNearestPlayer(x, y)
     local validPlayers = self:filter(function(p)
         return IsValid(p)
     end)
-    return ObjectManager.getNearestObject(validPlayers, x, y)
+    return ObjectHelper.getNearestObject(validPlayers, x, y)
 end
 
 ---获取距离指定位置最近的N个玩家
@@ -301,7 +301,7 @@ function PlayerManager:getNearestPlayers(x, y, count)
     local validPlayers = self:filter(function(p)
         return IsValid(p)
     end)
-    local results = ObjectManager.getNearestObjects(validPlayers, x, y, count)
+    local results = ObjectHelper.getNearestObjects(validPlayers, x, y, count)
 
     -- 重命名 object 为 player 以保持接口一致
     for _, item in ipairs(results) do
@@ -321,7 +321,7 @@ function PlayerManager:getPlayersInRange(x, y, radius)
     local validPlayers = self:filter(function(p)
         return IsValid(p)
     end)
-    return ObjectManager.getObjectsInRange(validPlayers, x, y, radius)
+    return ObjectHelper.getObjectsInRange(validPlayers, x, y, radius)
 end
 
 ---获取距离指定位置最远的玩家
@@ -333,7 +333,7 @@ function PlayerManager:getFarthestPlayer(x, y)
     local validPlayers = self:filter(function(p)
         return IsValid(p)
     end)
-    return ObjectManager.getFarthestObject(validPlayers, x, y)
+    return ObjectHelper.getFarthestObject(validPlayers, x, y)
 end
 
 ---获取所有玩家的中心位置（质心）
@@ -343,26 +343,26 @@ function PlayerManager:getPlayersCenter()
     local validPlayers = self:filter(function(p)
         return IsValid(p)
     end)
-    return ObjectManager.getObjectsCenter(validPlayers)
+    return ObjectHelper.getObjectsCenter(validPlayers)
 end
 
 ---按指定条件排序玩家
 ---@param comparator fun(a: thlib.Player, b: thlib.Player): boolean 比较函数
 ---@return thlib.Player[] 排序后的玩家列表（新列表）
 function PlayerManager:getSortedPlayers(comparator)
-    return ObjectManager.sortObjects(self.playerList, comparator)
+    return ObjectHelper.sortObjects(self.playerList, comparator)
 end
 
 ---获取按X坐标排序的玩家（从左到右）
 ---@return thlib.Player[]
 function PlayerManager:getPlayersByX()
-    return ObjectManager.sortByX(self.playerList)
+    return ObjectHelper.sortByX(self.playerList)
 end
 
 ---获取按Y坐标排序的玩家（从下到上）
 ---@return thlib.Player[]
 function PlayerManager:getPlayersByY()
-    return ObjectManager.sortByY(self.playerList)
+    return ObjectHelper.sortByY(self.playerList)
 end
 
 ---获取按槽位排序的玩家
@@ -377,7 +377,7 @@ end
 ---@param count number 要获取的玩家数量
 ---@return thlib.Player[] 随机玩家列表
 function PlayerManager:getRandomPlayers(count)
-    return ObjectManager.getRandomObjects(self.playerList, count)
+    return ObjectHelper.getRandomObjects(self.playerList, count)
 end
 
 ---获取满足条件的玩家数量
@@ -436,7 +436,7 @@ function PlayerManager:getPlayersInSector(x, y, angle, angleRange, maxDistance)
     local validPlayers = self:filter(function(p)
         return IsValid(p)
     end)
-    return ObjectManager.getObjectsInSector(validPlayers, x, y, angle, angleRange, maxDistance)
+    return ObjectHelper.getObjectsInSector(validPlayers, x, y, angle, angleRange, maxDistance)
 end
 
 ---获取指定矩形区域内的玩家
@@ -449,7 +449,7 @@ function PlayerManager:getPlayersInRect(left, right, bottom, top)
     local validPlayers = self:filter(function(p)
         return IsValid(p)
     end)
-    return ObjectManager.getObjectsInRect(validPlayers, left, right, bottom, top)
+    return ObjectHelper.getObjectsInRect(validPlayers, left, right, bottom, top)
 end
 
 ---分配目标给所有玩家（每个玩家分配最近的目标）
@@ -459,7 +459,7 @@ function PlayerManager:assignTargets(targets)
     local validPlayers = self:filter(function(p)
         return IsValid(p)
     end)
-    return ObjectManager.assignTargets(validPlayers, targets)
+    return ObjectHelper.assignTargets(validPlayers, targets)
 end
 
 ---获取所有玩家的边界框
@@ -471,7 +471,7 @@ function PlayerManager:getPlayersBounds()
     local validPlayers = self:filter(function(p)
         return IsValid(p)
     end)
-    return ObjectManager.getObjectsBounds(validPlayers)
+    return ObjectHelper.getObjectsBounds(validPlayers)
 end
 
 ---获取两个玩家之间的距离
@@ -481,7 +481,7 @@ end
 function PlayerManager:getDistanceBetween(slot1, slot2)
     local p1 = self.players[slot1]
     local p2 = self.players[slot2]
-    return ObjectManager.getDistance(p1, p2)
+    return ObjectHelper.getDistance(p1, p2)
 end
 
 ---检查所有玩家是否都满足条件
@@ -648,7 +648,7 @@ function PlayerManager:getMaxDistanceBetweenPlayers()
     local validPlayers = self:filter(function(p)
         return IsValid(p)
     end)
-    return ObjectManager.getMaxDistanceBetween(validPlayers)
+    return ObjectHelper.getMaxDistanceBetween(validPlayers)
 end
 
 ---获取玩家间的最小距离
@@ -657,7 +657,7 @@ function PlayerManager:getMinDistanceBetweenPlayers()
     local validPlayers = self:filter(function(p)
         return IsValid(p)
     end)
-    return ObjectManager.getMinDistanceBetween(validPlayers)
+    return ObjectHelper.getMinDistanceBetween(validPlayers)
 end
 
 ---轮询获取下一个玩家（用于轮流分配目标等）
@@ -703,7 +703,7 @@ function PlayerManager:getWeightedRandomPlayer(weightFunc)
     local validPlayers = self:filter(function(p)
         return IsValid(p)
     end)
-    return ObjectManager.getWeightedRandomObject(validPlayers, function(player)
+    return ObjectHelper.getWeightedRandomObject(validPlayers, function(player)
         return weightFunc(player, player.slot)
     end)
 end
