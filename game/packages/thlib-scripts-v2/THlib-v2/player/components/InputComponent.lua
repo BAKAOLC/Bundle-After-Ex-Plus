@@ -41,8 +41,15 @@ local function create(owner, config)
         -- 默认玩家输入
         self:defaultInput()
 
-        -- 更新玩家的slow状态
-        player.slow = self.keyState.slow and 1 or 0
+        -- 只在普通状态时更新玩家的slow状态
+        local stateComp = player:getComponent("state")
+        if stateComp and stateComp.currentState == "normal" then
+            if player.slowlock then
+                player.slow = 1
+            else
+                player.slow = self.keyState.slow and 1 or 0
+            end
+        end
     end
 
     function component:defaultInput()
