@@ -92,27 +92,13 @@ end
 ---为对象混入组件系统方法
 ---@param obj table
 local function mixin(obj)
-    obj.addComponent = function(self, component, componentType)
-        return addComponent(self, component, componentType)
-    end
-    obj.removeComponent = function(self, componentId)
-        removeComponent(self, componentId)
-    end
-    obj.getComponent = function(self, componentType)
-        return getComponent(self, componentType)
-    end
-    obj.getComponents = function(self, componentType)
-        return getComponents(self, componentType)
-    end
-    obj.resolveComponents = function(self)
-        resolveComponents(self)
-    end
-    obj.updateComponents = function(self)
-        updateComponents(self)
-    end
-    obj.renderComponents = function(self)
-        renderComponents(self)
-    end
+    obj.addComponent = addComponent
+    obj.removeComponent = removeComponent
+    obj.getComponent = getComponent
+    obj.getComponents = getComponents
+    obj.resolveComponents = resolveComponents
+    obj.updateComponents = updateComponents
+    obj.renderComponents = renderComponents
 
     initComponentSystem(obj)
 end
