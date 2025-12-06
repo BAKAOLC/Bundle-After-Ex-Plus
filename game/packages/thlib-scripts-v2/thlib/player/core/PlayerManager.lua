@@ -54,13 +54,7 @@ function PlayerManager:createPlayer(slot, playerConfig, componentConfigs)
     componentConfigs = componentConfigs or PlayerPresets.default()
 
     -- 创建玩家对象
-    local player = New(Player)
-    if not player then
-        return nil, "创建玩家对象失败"
-    end
-
-    -- 初始化玩家
-    player:init(slot, playerConfig)
+    local player = Player.create(slot, playerConfig)
 
     -- 设置组件
     player:setupComponents(componentConfigs)

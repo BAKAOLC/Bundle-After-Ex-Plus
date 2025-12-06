@@ -29,6 +29,12 @@ local createEventDispatcher = require("foundation.EventDispatcher")
 ---@field unregisterEvent fun(self: thlib.Player, eventName: string, listenerId: string)
 local Player = lstg.CreateGameObjectClass()
 
+function Player.create(slot, config)
+    local self = lstg.New(Player)
+    Player.initialize(self, slot, config)
+    return self
+end
+
 ---将类方法复制到对象上（使C++对象可以用冒号调用）
 ---@param self thlib.Player
 local function mixinMethods(self)
@@ -40,7 +46,7 @@ end
 ---初始化玩家
 ---@param slot number 玩家槽位
 ---@param config table|nil 配置覆盖
-function Player:init(slot, config)
+function Player:initialize(slot, config)
     -- 混入组件系统
     GameObjectMixin.mixin(self)
 
@@ -79,10 +85,6 @@ function Player:init(slot, config)
     self.__move_dx = 0
     self.__move_dy = 0
     self.__currentState = "normal"  -- 初始状态
-
-    -- 设置全局引用
-    lstg.player = self
-    player = self
 
     -- 触发初始化事件
     self:_dispatchEvent("onInit")
