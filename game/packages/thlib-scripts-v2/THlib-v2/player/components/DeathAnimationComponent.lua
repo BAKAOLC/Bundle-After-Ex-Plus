@@ -1,3 +1,5 @@
+local deathEffect = require("THlib-v2.player.DeathEffect")
+
 ---死亡动画组件
 ---@class THlib.Player.DeathAnimationComponent : foundation.Component
 ---@field style string
@@ -40,8 +42,7 @@ local function create(owner, config)
 
         if self.style == "classic" then
             New(death_weapon, player.x, player.y)
-            New(deatheff, player.x, player.y, "first")
-            New(deatheff, player.x, player.y, "second")
+            deathEffect.create(player.x, player.y)
             New(player_death_ef, player.x, player.y)
             player.hide = true
         elseif self.style == "simple" then
