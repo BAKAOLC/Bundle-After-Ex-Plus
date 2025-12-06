@@ -2,6 +2,7 @@ local string = string
 local table = table
 local ipairs = ipairs
 local pairs = pairs
+local pcall = pcall
 local setmetatable = setmetatable
 
 ---玩家管理器
