@@ -15,6 +15,7 @@ local GrazeComponentType = TypeDef.create("thlib.Player.GrazeComponent", Compone
     defaults = {
         enabled = true,
         executePriority = 7,
+        alias = "graze",
         grazeRadius = 24,
         visualRadius = 24,
         grazeObject = nil,
@@ -25,7 +26,7 @@ local GrazeComponentType = TypeDef.create("thlib.Player.GrazeComponent", Compone
         Awake = function(self)
             local player = self.owner
             -- 创建擦弹判定对象
-            self.grazeObject = New(grazer_class, player)
+            self.grazeObject = grazer_class.create(player)
             if self.grazeObject then
                 self.grazeObject.a = self.grazeRadius
                 self.grazeObject.b = self.grazeRadius
