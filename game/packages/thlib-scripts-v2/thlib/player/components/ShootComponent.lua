@@ -87,7 +87,7 @@ local ShootComponentType = TypeDef.create("thlib.Player.ShootComponent", Compone
 })
 
 ---创建射击组件
----@param config table
+---@param config {onShoot: function|nil, shootFunc: function|nil, interval: number|nil}|nil
 ---@return thlib.Player.ShootComponent
 local function create(config)
     config = config or {}

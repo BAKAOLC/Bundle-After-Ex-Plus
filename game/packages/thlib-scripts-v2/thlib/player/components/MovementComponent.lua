@@ -114,7 +114,7 @@ local MovementComponentType = TypeDef.create("thlib.Player.MovementComponent", C
 })
 
 ---创建移动组件
----@param config table
+---@param config {highSpeed: number|nil, lowSpeed: number|nil, use8Directions: boolean|nil, bounds: {left: number, right: number, bottom: number, top: number}|nil, moveFunc: function|nil}|nil
 ---@return thlib.Player.MovementComponent
 local function create(config)
     config = config or {}

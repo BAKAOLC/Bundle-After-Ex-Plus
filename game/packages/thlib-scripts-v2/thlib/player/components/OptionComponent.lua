@@ -99,7 +99,7 @@ local OptionComponentType = TypeDef.create("thlib.Player.OptionComponent", Compo
         end,
 
         ---添加子机
-        ---@param optionConfig table
+        ---@param optionConfig thlib.Player.OptionConfig
         ---@return thlib.Player.Option
         addOption = function(self, optionConfig)
             local index = #self.options + 1
@@ -157,7 +157,7 @@ local OptionComponentType = TypeDef.create("thlib.Player.OptionComponent", Compo
 })
 
 ---创建子机组件
----@param config table
+---@param config {options: thlib.Player.OptionConfig[]}|nil
 ---@return thlib.Player.OptionComponent
 local function create(config)
     config = config or {}

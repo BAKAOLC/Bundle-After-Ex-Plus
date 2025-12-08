@@ -76,7 +76,7 @@ local PowerComponentType = TypeDef.create("thlib.Player.PowerComponent", Compone
 })
 
 ---创建火力组件
----@param config table
+---@param config {supportLerpSpeed: number|nil, supportPosLerpSpeed: number|nil}|nil
 ---@return thlib.Player.PowerComponent
 local function create(config)
     config = config or {}

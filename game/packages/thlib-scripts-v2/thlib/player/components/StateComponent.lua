@@ -8,7 +8,7 @@ local ComponentSystem = require("core.ComponentSystem")
 ---@field stateMachine core.StateMachine
 ---@field currentState string
 ---@field stateTimers table<string, number>
----@field config table
+---@field config {enableDeathSpell: boolean, deathSpellDuration: number, deathAnimationDuration: number}
 ---@field respawnComp thlib.Player.RespawnComponent|nil
 
 -- 定义组件类型
@@ -160,7 +160,7 @@ local StateComponentType = TypeDef.create("thlib.Player.StateComponent", Compone
 })
 
 ---创建状态机组件
----@param config table
+---@param config {enableDeathSpell: boolean|nil, deathSpellDuration: number|nil, deathAnimationDuration: number|nil}|nil
 ---@return thlib.Player.StateComponent
 local function create(config)
     config = config or {}

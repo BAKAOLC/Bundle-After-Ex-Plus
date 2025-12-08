@@ -4,8 +4,8 @@ local TypeDef = require("core.TypeDef")
 local ComponentSystem = require("core.ComponentSystem")
 
 ---@class thlib.Player.InputComponent : core.Component
----@field keyState table
----@field moveVector table {dx, dy}
+---@field keyState {slow: boolean, shoot: boolean, spell: boolean, special: boolean}
+---@field moveVector {dx: number, dy: number}
 ---@field inputFunc function|nil 自定义输入函数
 ---@field stateComp thlib.Player.StateComponent|nil
 
@@ -69,7 +69,7 @@ local InputComponentType = TypeDef.create("thlib.Player.InputComponent", Compone
 })
 
 ---创建输入组件
----@param config table
+---@param config {inputFunc: function|nil}|nil
 ---@return thlib.Player.InputComponent
 local function create(config)
     config = config or {}

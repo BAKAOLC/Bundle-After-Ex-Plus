@@ -31,7 +31,7 @@ local ProtectComponentType = TypeDef.create("thlib.Player.ProtectComponent", Com
 })
 
 ---创建保护组件
----@param config table
+---@param config {protectTimer: number|nil, [string]: any}|nil
 ---@return thlib.Player.ProtectComponent
 local function create(config)
     config = config or {}

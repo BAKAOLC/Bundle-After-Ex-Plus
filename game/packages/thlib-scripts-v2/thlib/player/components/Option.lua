@@ -10,7 +10,7 @@ local TypeDef = require("core.TypeDef")
 ---@field lerpSpeed number|nil 位置插值速度（默认 0.3）
 ---@field alphaLerpSpeed number|nil 透明度插值速度（默认 1）
 ---@field image string|nil 子机图像
----@field color table|userdata|function|nil 颜色（table: {a,r,g,b}, Color对象, 或返回颜色的函数）
+---@field color {a: number, r: number, g: number, b: number}|userdata|function|nil 颜色（table: {a,r,g,b}, Color对象, 或返回颜色的函数）
 ---@field scaleX number|nil 水平缩放（默认 1.0）
 ---@field scaleY number|nil 垂直缩放（默认 1.0）
 ---@field blendMode string|nil 混合模式（默认 ""）
@@ -47,7 +47,7 @@ local TypeDef = require("core.TypeDef")
 ---@field alphaLerpSpeed number 透明度插值速度
 ---@field requiredPower number 需要的火力等级
 ---@field image string|nil 子机图像
----@field color table|userdata|function|nil 颜色
+---@field color {a: number, r: number, g: number, b: number}|userdata|function|nil 颜色
 ---@field scaleX number 水平缩放
 ---@field scaleY number 垂直缩放
 ---@field blendMode string 混合模式
@@ -311,7 +311,7 @@ end
 ---@param image string 子机图像
 ---@param angle number 发射角度
 ---@param positions table<number, {highSpeed: {x: number, y: number}, lowSpeed: {x: number, y: number}}> 各火力等级的位置配置
----@param extraConfig table|nil 额外配置
+---@param extraConfig thlib.Player.OptionConfig|nil 额外配置（image、angle、getTargetOffset 字段会被忽略，因为这些已在函数参数中提供）
 ---@return thlib.Player.OptionConfig
 local function createFixedOption(image, angle, positions, extraConfig)
     extraConfig = extraConfig or {}
@@ -376,7 +376,7 @@ end
 ---@param radius number|function 环绕半径（数值或函数）
 ---@param initialAngle number 初始角度（度）
 ---@param angularSpeed number 角速度（度/帧）
----@param extraConfig table|nil 额外配置 {requiredPower, lerpSpeed, color, scaleX, scaleY, blendMode, rot, omega, angle, ...}
+---@param extraConfig thlib.Player.OptionConfig|nil 额外配置（image、getTargetOffset 字段会被忽略，因为这些已在函数中自动生成；angle 字段可选，默认使用环绕角度）
 ---@return thlib.Player.OptionConfig
 local function createOrbitOption(image, radius, initialAngle, angularSpeed, extraConfig)
     extraConfig = extraConfig or {}
