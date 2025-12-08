@@ -98,11 +98,6 @@ local CollisionComponentType = TypeDef.create("thlib.Player.CollisionComponent",
                 return
             end
 
-            -- 删除子弹（如果 other 存在）
-            if other and self.deleteOnHit and other.group == GROUP_ENEMY_BULLET then
-                Del(other)
-            end
-
             -- 播放音效
             if self.playSoundOnHit then
                 PlaySound("pldead00", 0.5)
