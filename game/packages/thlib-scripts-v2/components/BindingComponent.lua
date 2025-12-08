@@ -328,6 +328,20 @@ local BindingScaleMode = {
     LAST = "last", -- 跟随最后一个
 }
 
+---@class components.BindingConfig
+---@field bindPosition boolean|nil 是否绑定位置（默认true）
+---@field bindRotation boolean|nil 是否绑定旋转（默认false）
+---@field bindScale boolean|nil 是否绑定缩放（默认false）
+---@field offsetX number|nil 位置偏移X（默认0）
+---@field offsetY number|nil 位置偏移Y（默认0）
+---@field offsetAngle number|nil 旋转偏移角度（默认0）
+---@field scaleX number|nil 缩放X（默认1）
+---@field scaleY number|nil 缩放Y（默认1）
+---@field followRotation boolean|nil 是否跟随旋转（默认false）
+---@field weight number|nil 权重（用于加权平均，默认1）
+---@field data table|nil 自定义数据
+---@field subscribeEvents table<string, string|table>|nil 事件订阅映射
+
 ---@class components.BindingInfo
 ---@field target any 绑定目标
 ---@field bindPosition boolean 是否绑定位置
@@ -497,19 +511,7 @@ local BindingComponentType = TypeDef.create("components.BindingComponent", Compo
 
         ---添加绑定
         ---@param target any 绑定目标
-        ---@param config table|nil 配置选项
-        ---@param config.bindPosition boolean|nil 是否绑定位置（默认true）
-        ---@param config.bindRotation boolean|nil 是否绑定旋转（默认false）
-        ---@param config.bindScale boolean|nil 是否绑定缩放（默认false）
-        ---@param config.offsetX number|nil 位置偏移X（默认0）
-        ---@param config.offsetY number|nil 位置偏移Y（默认0）
-        ---@param config.offsetAngle number|nil 旋转偏移角度（默认0）
-        ---@param config.scaleX number|nil 缩放X（默认1）
-        ---@param config.scaleY number|nil 缩放Y（默认1）
-        ---@param config.followRotation boolean|nil 是否跟随旋转（默认false）
-        ---@param config.weight number|nil 权重（用于加权平均，默认1）
-        ---@param config.data table|nil 自定义数据
-        ---@param config.subscribeEvents table<string, string|table>|nil 事件订阅映射
+        ---@param config components.BindingConfig|nil 配置选项
         ---@return number bindingId 绑定ID
         addBinding = function(self, target, config)
             if not target then
