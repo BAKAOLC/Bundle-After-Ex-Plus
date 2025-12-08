@@ -115,11 +115,49 @@ local GrazerType = TypeDef.create("thlib.Player.Grazer", GameObject.Type, {
 
         OnCollision = function(self, other)
             if other.group == GROUP_ENEMY_BULLET or other.group == GROUP_INDES then
-                local grazesys = self.player:getComponent("graze")
-                if grazesys then
-                    grazesys:onGraze(other)
-                    -- 设置擦弹标志，下一帧发射粒子
-                    self.grazed = true
+                -- 初始化擦弹记录表（如果不存在）
+                if not other._grazed_by then
+                    other._grazed_by = {}
+                end
+
+                -- 检查是否支持无限擦弹
+                local inf_graze = other._inf_graze or false
+                -- 获取擦弹间隔，默认1
+                local graze_interval = other._graze_interval or 1
+
+                -- 检查该玩家是否已经擦弹过这个子弹
+                local player_slot = self.player.slot
+                local last_graze_time = other._grazed_by[player_slot]
+                local current_time = other.timer or 0
+
+                -- 判断是否可以擦弹
+                local can_graze = false
+                if inf_graze then
+                    -- 无限擦弹：检查是否已经过了间隔时间
+                    if not last_graze_time then
+                        -- 从未擦弹过
+                        can_graze = true
+                    else
+                        -- 检查间隔是否已过
+                        local time_since_last_graze = current_time - last_graze_time
+                        can_graze = time_since_last_graze >= graze_interval
+                    end
+                else
+                    -- 普通擦弹：只能擦弹一次
+                    can_graze = not last_graze_time
+                end
+
+                -- 如果可以擦弹，则触发擦弹
+                if can_graze then
+                    local grazesys = self.player:getComponent("graze")
+                    if grazesys then
+                        grazesys:onGraze(other)
+                        -- 设置擦弹标志，下一帧发射粒子
+                        self.grazed = true
+
+                        -- 记录擦弹时间
+                        other._grazed_by[player_slot] = current_time
+                    end
                 end
             end
         end,
