@@ -46,12 +46,18 @@ local CollisionComponentType = TypeDef.create("thlib.Player.CollisionComponent",
         end,
 
         handleCollision = function(self, player, other)
+            if self.deleteOnHit and other.group == GROUP_ENEMY_BULLET then
+                Del(other)
+            end
+
             -- 如果在无敌保护期，不处理碰撞
             if self.protectComp and self.protectComp:isProtected() then
-                if self.deleteOnHit and other.group == GROUP_ENEMY_BULLET then
-                    Del(other)
-                end
                 return true  -- 阻止默认行为
+            end
+
+            -- 检查 cheat 模式（无敌）
+            if cheat then
+                return true  -- cheat 模式下阻止碰撞
             end
 
             -- 如果不在正常状态，不处理碰撞
