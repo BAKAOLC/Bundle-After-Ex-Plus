@@ -95,32 +95,28 @@ local PlayerType = TypeDef.create("thlib.Player", GameObject.Type, {
             -- 添加状态机组件（默认启用）
             if componentConfigs.state ~= false then
                 self:addComponent(
-                        StateComp.create(componentConfigs.state or {}),
-                        StateComp.Type.typeName
+                        StateComp.create(componentConfigs.state or {})
                 )
             end
 
             -- 添加输入组件（默认启用）
             if componentConfigs.input ~= false then
                 self:addComponent(
-                        InputComp.create(componentConfigs.input or {}),
-                        InputComp.Type.typeName
+                        InputComp.create(componentConfigs.input or {})
                 )
             end
 
             -- 添加保护组件（默认启用）
             if componentConfigs.protect ~= false then
                 self:addComponent(
-                        ProtectComp.create(componentConfigs.protect or {}),
-                        ProtectComp.Type.typeName
+                        ProtectComp.create(componentConfigs.protect or {})
                 )
             end
 
             -- 添加火力组件（默认启用）
             if componentConfigs.power ~= false then
                 self:addComponent(
-                        PowerComp.create(componentConfigs.power or {}),
-                        PowerComp.Type.typeName
+                        PowerComp.create(componentConfigs.power or {})
                 )
             end
 
@@ -133,24 +129,21 @@ local PlayerType = TypeDef.create("thlib.Player", GameObject.Type, {
                                 spell = 0,
                                 special = 0,
                             }
-                        }),
-                        TimerComp.Type.typeName
+                        })
                 )
             end
 
             -- 添加Buff组件（默认启用）
             if componentConfigs.buff ~= false then
                 self:addComponent(
-                        BuffComp.create(componentConfigs.buff or {}),
-                        BuffComp.Type.typeName
+                        BuffComp.create(componentConfigs.buff or {})
                 )
             end
 
             -- 添加修饰器组件（默认启用）
             if componentConfigs.modifier ~= false then
                 self:addComponent(
-                        ModifierComp.create(componentConfigs.modifier or {}),
-                        ModifierComp.Type.typeName
+                        ModifierComp.create(componentConfigs.modifier or {})
                 )
             end
 
@@ -160,16 +153,14 @@ local PlayerType = TypeDef.create("thlib.Player", GameObject.Type, {
                         HealthComp.create(componentConfigs.health or {
                             maxHealth = 1,
                             currentHealth = 1,
-                        }),
-                        HealthComp.Type.typeName
+                        })
                 )
             end
 
             -- 添加伤害接收组件（默认启用）
             if componentConfigs.damageReceiver ~= false then
                 self:addComponent(
-                        DamageReceiverComp.create(componentConfigs.damageReceiver or {}),
-                        DamageReceiverComp.Type.typeName
+                        DamageReceiverComp.create(componentConfigs.damageReceiver or {})
                 )
             end
 
@@ -186,56 +177,49 @@ local PlayerType = TypeDef.create("thlib.Player", GameObject.Type, {
                                 bottom = 16,
                                 top = 32,
                             }
-                        }),
-                        MovementComp.Type.typeName
+                        })
                 )
             end
 
             -- 添加碰撞处理组件（默认启用）
             if componentConfigs.collision ~= false then
                 self:addComponent(
-                        CollisionComp.create(componentConfigs.collision or {}),
-                        CollisionComp.Type.typeName
+                        CollisionComp.create(componentConfigs.collision or {})
                 )
             end
 
             -- 添加擦弹组件（默认启用）
             if componentConfigs.graze ~= false then
                 self:addComponent(
-                        GrazeComp.create(componentConfigs.graze or {}),
-                        GrazeComp.Type.typeName
+                        GrazeComp.create(componentConfigs.graze or {})
                 )
             end
 
             -- 添加子机组件
             if componentConfigs.option then
                 self:addComponent(
-                        OptionComp.create(componentConfigs.option),
-                        OptionComp.Type.typeName
+                        OptionComp.create(componentConfigs.option)
                 )
             end
 
             -- 添加射击组件
             if componentConfigs.shoot then
                 self:addComponent(
-                        ShootComp.create(componentConfigs.shoot),
-                        ShootComp.Type.typeName
+                        ShootComp.create(componentConfigs.shoot)
                 )
             end
 
             -- 添加符卡组件
             if componentConfigs.spell then
                 self:addComponent(
-                        SpellComp.create(componentConfigs.spell),
-                        SpellComp.Type.typeName
+                        SpellComp.create(componentConfigs.spell)
                 )
             end
 
             -- 添加复活组件（默认启用）
             if componentConfigs.respawn ~= false then
                 self:addComponent(
-                        RespawnComp.create(componentConfigs.respawn or {}),
-                        RespawnComp.Type.typeName
+                        RespawnComp.create(componentConfigs.respawn or {})
                 )
             end
 
@@ -244,32 +228,28 @@ local PlayerType = TypeDef.create("thlib.Player", GameObject.Type, {
                 self:addComponent(
                         DeathAnimComp.create(componentConfigs.deathAnimation or {
                             style = "classic",
-                        }),
-                        DeathAnimComp.Type.typeName
+                        })
                 )
             end
 
             -- 添加道具收集组件（默认启用）
             if componentConfigs.itemCollection ~= false then
                 self:addComponent(
-                        ItemCollectComp.create(componentConfigs.itemCollection or {}),
-                        ItemCollectComp.Type.typeName
+                        ItemCollectComp.create(componentConfigs.itemCollection or {})
                 )
             end
 
             -- 添加目标锁定组件（默认启用）
             if componentConfigs.targeting ~= false then
                 self:addComponent(
-                        TargetingComp.create(componentConfigs.targeting or {}),
-                        TargetingComp.Type.typeName
+                        TargetingComp.create(componentConfigs.targeting or {})
                 )
             end
 
             -- 添加行走图组件（默认启用）
             if componentConfigs.walkImage ~= false then
                 self:addComponent(
-                        WalkImageComp.create(componentConfigs.walkImage or {}),
-                        WalkImageComp.Type.typeName
+                        WalkImageComp.create(componentConfigs.walkImage or {})
                 )
             end
         end,

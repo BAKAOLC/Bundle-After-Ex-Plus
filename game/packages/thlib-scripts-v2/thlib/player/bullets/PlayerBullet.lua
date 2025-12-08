@@ -51,7 +51,7 @@ local function create(config)
         local damageComp = DamageComp.create({
             baseDamage = damage,
         })
-        bullet:addComponent(damageComp, "damage")
+        bullet:addComponent(damageComp)
     end
 
     return bullet

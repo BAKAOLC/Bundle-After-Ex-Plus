@@ -15,8 +15,10 @@ local GameObjectType = TypeDef.create("core.GameObject")
 ---@field _componentSystem core.ComponentSystem 组件系统
 ---@field _lifecycleStarted boolean 生命周期是否已开始（Start 是否已调用）
 ---@field _listener foundation.EventDispatcher|nil 事件监听器（延迟初始化）
----@field addComponent fun(self: core.GameObject, component: core.Component, componentType: string): number
----@field removeComponent fun(self: core.GameObject, componentId: number)
+---@field addComponent fun(self: core.GameObject, component: core.Component)
+---@field addComponents fun(self: core.GameObject, ...: core.Component) 批量添加组件
+---@field removeComponent fun(self: core.GameObject, componentOrType: core.Component|string) 移除组件（接受组件实例或类型名称）
+---@field removeComponents fun(self: core.GameObject, ...: core.Component|string) 批量移除组件
 ---@field getComponent fun(self: core.GameObject, componentType: string): core.Component|nil
 ---@field getComponents fun(self: core.GameObject, componentType: string): table|nil
 ---@field startComponents fun(self: core.GameObject) 处理组件 Start 生命周期

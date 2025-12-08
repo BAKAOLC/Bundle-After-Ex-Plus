@@ -1,5 +1,6 @@
 local ipairs = ipairs
 local pairs = pairs
+local type = type
 local error = error
 local string = string
 
@@ -44,8 +45,10 @@ local ComponentType = TypeDef.create("core.Component", nil, {
 ---@field updateSortDirty boolean 是否需要重新排序update组件
 ---@field renderSortDirty boolean 是否需要重新排序render组件
 ---@field _startedComponents table<core.Component, boolean> 已调用 Start 的组件集合
----@field addComponent fun(self: core.ComponentSystem, component: core.Component, componentType: string): number
----@field removeComponent fun(self: core.ComponentSystem, componentId: number)
+---@field addComponent fun(self: core.ComponentSystem, component: core.Component)
+---@field addComponents fun(self: core.ComponentSystem, ...: core.Component) 批量添加组件
+---@field removeComponent fun(self: core.ComponentSystem, componentOrType: core.Component|string) 移除组件（接受组件实例或类型名称）
+---@field removeComponents fun(self: core.ComponentSystem, ...: core.Component|string) 批量移除组件
 ---@field getComponents fun(self: core.ComponentSystem, componentType: string): core.Component[]|nil
 ---@field getComponent fun(self: core.ComponentSystem, componentType: string): core.Component|nil
 ---@field Start fun(self: core.ComponentSystem) 处理所有组件的 Start 生命周期（第一次调用时）
@@ -77,12 +80,10 @@ local function new(owner)
 
     ---添加组件
     ---@param component core.Component 组件实例（必须包含 typeDef）
-    ---@param componentType string|nil 组件类型标识（可选，用于向后兼容，如果 component 没有 typeDef 则使用）
-    ---@return number componentId 组件ID
-    function system:addComponent(component, componentType)
+    function system:addComponent(component)
         -- 检查 component 是否已经挂载在其他对象上
         if component.owner and component.owner ~= self.owner then
-            local componentTypeName = (component.typeDef and component.typeDef.typeName) or component.typeName or componentType or "unknown"
+            local componentTypeName = (component.typeDef and component.typeDef.typeName) or component.typeName or "unknown"
             error(string.format(
                     "Cannot add component '%s' to object: component is already attached to another object",
                     componentTypeName
@@ -144,14 +145,22 @@ local function new(owner)
         if awake then
             awake(component)
         end
-
-        return count
     end
 
-    ---移除组件
-    ---@param componentId number 组件ID（数组索引）
-    function system:removeComponent(componentId)
-        local component = self.components[componentId]
+    ---批量添加组件
+    ---@vararg core.Component 组件实例（每个组件必须包含 typeDef）
+    function system:addComponents(...)
+        local components = { ... }
+        for i, component in ipairs(components) do
+            if component then
+                self:addComponent(component)
+            end
+        end
+    end
+
+    ---内部方法：实际移除组件
+    ---@param component core.Component 组件实例
+    function system:_doRemoveComponent(component)
         if not component then
             return
         end
@@ -174,7 +183,38 @@ local function new(owner)
         end
 
         self._startedComponents[component] = nil
-        self.components[componentId] = nil
+
+        -- 从 components 数组中移除
+        local components = self.components
+        for i = 1, self.componentCount do
+            if components[i] == component then
+                components[i] = nil
+                break
+            end
+        end
+
+        -- 从类型索引中移除
+        if component.typeDef and component.typeDef.typeName then
+            local typeName = component.typeDef.typeName
+            local typeList = self.componentsByType[typeName]
+            if typeList then
+                for i = 1, typeList.count do
+                    if typeList[i] == component then
+                        -- 将最后一个元素移到当前位置
+                        if i < typeList.count then
+                            typeList[i] = typeList[typeList.count]
+                        end
+                        typeList[typeList.count] = nil
+                        typeList.count = typeList.count - 1
+                        break
+                    end
+                end
+                -- 如果该类型没有组件了，清理
+                if typeList.count == 0 then
+                    self.componentsByType[typeName] = nil
+                end
+            end
+        end
 
         -- 清理 owner 引用
         component.owner = nil
@@ -183,6 +223,38 @@ local function new(owner)
         self.sortDirty = true
         self.updateSortDirty = true
         self.renderSortDirty = true
+    end
+
+    ---移除组件
+    ---@param componentOrType core.Component|string 组件实例或类型名称
+    function system:removeComponent(componentOrType)
+        if not componentOrType then
+            return
+        end
+
+        local component
+        if type(componentOrType) == "string" then
+            -- 如果是类型名称，获取第一个匹配的组件
+            component = self:getComponent(componentOrType)
+        else
+            -- 如果是组件实例，直接使用
+            component = componentOrType
+        end
+
+        if component then
+            self:_doRemoveComponent(component)
+        end
+    end
+
+    ---批量移除组件
+    ---@vararg core.Component|string 组件实例或类型名称
+    function system:removeComponents(...)
+        local args = { ... }
+        for i, componentOrType in ipairs(args) do
+            if componentOrType then
+                self:removeComponent(componentOrType)
+            end
+        end
     end
 
     ---根据类型获取组件列表
@@ -727,9 +799,9 @@ local function new(owner)
                         end
                     end
                 end
-                local typeCount = typeList.count + 1
-                typeList.count = typeCount
-                typeList[typeCount] = comp
+                local count = typeList.count + 1
+                typeList.count = count
+                typeList[count] = comp
             end
         end
     end

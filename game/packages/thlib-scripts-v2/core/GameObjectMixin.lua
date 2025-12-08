@@ -13,17 +13,29 @@ end
 ---添加组件
 ---@param obj table
 ---@param component core.Component
----@param componentType string
----@return number componentId
-local function addComponent(obj, component, componentType)
-    return obj._componentSystem:addComponent(component, componentType)
+local function addComponent(obj, component)
+    obj._componentSystem:addComponent(component)
+end
+
+---批量添加组件
+---@param obj table
+---@vararg core.Component 组件实例
+local function addComponents(obj, ...)
+    obj._componentSystem:addComponents(...)
 end
 
 ---移除组件
 ---@param obj table
----@param componentId number
-local function removeComponent(obj, componentId)
-    obj._componentSystem:removeComponent(componentId)
+---@param componentOrType core.Component|string 组件实例或类型名称
+local function removeComponent(obj, componentOrType)
+    obj._componentSystem:removeComponent(componentOrType)
+end
+
+---批量移除组件
+---@param obj table
+---@vararg core.Component|string 组件实例或类型名称
+local function removeComponents(obj, ...)
+    obj._componentSystem:removeComponents(...)
 end
 
 ---根据类型获取组件
@@ -111,7 +123,9 @@ end
 ---@param obj table
 local function mixin(obj)
     obj.addComponent = addComponent
+    obj.addComponents = addComponents
     obj.removeComponent = removeComponent
+    obj.removeComponents = removeComponents
     obj.getComponent = getComponent
     obj.getComponents = getComponents
     obj.startComponents = startComponents
@@ -129,7 +143,9 @@ end
 return {
     initComponentSystem = initComponentSystem,
     addComponent = addComponent,
+    addComponents = addComponents,
     removeComponent = removeComponent,
+    removeComponents = removeComponents,
     getComponent = getComponent,
     getComponents = getComponents,
     startComponents = startComponents,
