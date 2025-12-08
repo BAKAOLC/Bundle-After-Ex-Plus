@@ -148,13 +148,13 @@ local ModifierComponentType = TypeDef.create("components.ModifierComponent", Com
                 local value = modifier.value
 
                 if operation == "add" then
-                    -- 加法操作（value 为正数时加，为负数时减）
+                    -- 加法操作
                     result = result + value
                 elseif operation == "multiply" then
-                    -- 乘法操作（value > 1 时乘，value < 1 时除）
+                    -- 乘法操作
                     result = result * value
                 elseif operation == "power" then
-                    -- 次方操作（value > 1 时次方，value < 1 时开方）
+                    -- 次方操作
                     if result > 0 then
                         result = math.pow(result, value)
                     elseif result < 0 then
