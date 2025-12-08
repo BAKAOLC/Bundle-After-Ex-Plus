@@ -66,8 +66,21 @@ local ShootComponentType = TypeDef.create("thlib.Player.ShootComponent", Compone
                 self.timerComp:trigger("shoot")
             end
 
+            -- 主体射击
             if self.shootFunc then
                 self.shootFunc(player)
+            end
+
+            -- 通知所有激活的子机进行射击（子机自己检查射击时机）
+            if self.optionComp then
+                local activeOptions = self.optionComp:getActiveOptions()
+                for _, option in ipairs(activeOptions) do
+                    -- 检查子机是否可以射击
+                    if option:canShoot() and option.config and option.config.onShoot then
+                        option.config.onShoot(option, player)
+                        option:triggerShoot()
+                    end
+                end
             end
         end,
     },

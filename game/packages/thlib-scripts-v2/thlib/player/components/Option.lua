@@ -28,6 +28,8 @@ local TypeDef = require("core.TypeDef")
 ---@field onDestroy fun(option: thlib.Player.Option)|nil OnDestroy 生命周期回调
 ---@field onActivate fun(option: thlib.Player.Option)|nil 激活时回调
 ---@field onDeactivate fun(option: thlib.Player.Option)|nil 停用时回调
+---@field onShoot fun(option: thlib.Player.Option, player: thlib.Player)|nil 射击时回调
+---@field shootInterval number|nil 射击间隔（帧数，0表示与主体同步，nil表示不射击）
 
 ---@class thlib.Player.Option
 ---@field index number 子机索引
@@ -80,6 +82,8 @@ local OptionType = TypeDef.create("thlib.Player.Option", nil, {
         blendMode = "",
         getTargetOffset = nil,
         customRender = nil,
+        shootInterval = nil,
+        shootTimer = 0,
     },
     methods = {
         setPowerComponent = function(self, powerComp)
@@ -124,6 +128,11 @@ local OptionType = TypeDef.create("thlib.Player.Option", nil, {
 
             -- 更新计时器
             self.timer = self.timer + 1
+
+            -- 更新射击计时器
+            if self.shootInterval ~= nil and self.shootTimer > 0 then
+                self.shootTimer = self.shootTimer - 1
+            end
 
             -- 直接设置透明度和可见性
             if self.active then
@@ -245,6 +254,28 @@ local OptionType = TypeDef.create("thlib.Player.Option", nil, {
             end
             return nil
         end,
+
+        ---检查是否可以射击
+        ---@return boolean
+        canShoot = function(self)
+            if not self.active or not self.visible then
+                return false
+            end
+            if self.shootInterval == nil then
+                return false
+            end
+            if self.shootInterval == 0 then
+                return true
+            end
+            return self.shootTimer <= 0
+        end,
+
+        ---触发射击（重置射击计时器）
+        triggerShoot = function(self)
+            if self.shootInterval and self.shootInterval > 0 then
+                self.shootTimer = self.shootInterval
+            end
+        end,
     },
 })
 
@@ -280,6 +311,8 @@ local function new(owner, index, config)
         blendMode = config.blendMode or "",
         getTargetOffset = config.getTargetOffset,
         customRender = config.customRender,
+        shootInterval = config.shootInterval,
+        shootTimer = 0,
         _lifecycleStarted = false, -- 标记 Start 是否已调用
     })
 
@@ -352,6 +385,8 @@ local function createFixedOption(image, angle, positions, extraConfig)
         onDestroy = extraConfig.onDestroy,
         onActivate = extraConfig.onActivate,
         onDeactivate = extraConfig.onDeactivate,
+        onShoot = extraConfig.onShoot,
+        shootInterval = extraConfig.shootInterval,
     }
 end
 
@@ -396,6 +431,8 @@ local function createOrbitOption(image, radius, initialAngle, angularSpeed, extr
         onDestroy = extraConfig.onDestroy,
         onActivate = extraConfig.onActivate,
         onDeactivate = extraConfig.onDeactivate,
+        onShoot = extraConfig.onShoot,
+        shootInterval = extraConfig.shootInterval,
     }
 end
 
