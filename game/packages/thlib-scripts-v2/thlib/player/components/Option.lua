@@ -95,6 +95,14 @@ local OptionType = TypeDef.create("thlib.Player.Option", nil, {
         Start = function(self)
             -- Start 生命周期，在第一次 Update 之前调用
             -- 此时 powerComp 应该已经设置
+            -- 初始化时，直接设置 alpha 为目标值，不进行过渡
+            if self.powerComp then
+                local support = self.powerComp:getSupport()
+                self.active = (support >= self.requiredPower)
+                self.alpha = self.active and 1.0 or 0.0
+                self.visible = self.alpha > 0
+            end
+            
             if self.config.onStart then
                 self.config.onStart(self)
             end
