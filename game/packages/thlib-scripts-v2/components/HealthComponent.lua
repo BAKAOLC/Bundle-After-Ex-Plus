@@ -2,6 +2,46 @@
 local TypeDef = require("core.TypeDef")
 local ComponentSystem = require("core.ComponentSystem")
 
+---通知血量变化
+---@param healthComponent components.HealthComponent
+---@param oldHealth number
+---@param newHealth number
+---@param delta number
+local function notifyHealthChanged(healthComponent, oldHealth, newHealth, delta)
+    if healthComponent.onHealthChanged then
+        healthComponent.onHealthChanged(healthComponent, oldHealth, newHealth, delta)
+    end
+
+    -- 通过事件系统通知血量变化
+    local owner = healthComponent.owner
+    if owner and owner._dispatchEvent then
+        owner:_dispatchEvent("HealthComponent:onHealthChanged", healthComponent, oldHealth, newHealth, delta)
+    end
+
+    -- 血量耗尽
+    if newHealth <= 0 and oldHealth > 0 then
+        if healthComponent.onHealthDepleted then
+            healthComponent.onHealthDepleted(healthComponent)
+        end
+        -- 通过事件系统通知血量耗尽
+        if owner and owner._dispatchEvent then
+            owner:_dispatchEvent("HealthComponent:onHealthDepleted", healthComponent)
+        end
+    end
+
+    -- 血量回满
+    local maxHealth = healthComponent.maxHealth
+    if newHealth >= maxHealth and oldHealth < maxHealth then
+        if healthComponent.onHealthFull then
+            healthComponent.onHealthFull(healthComponent)
+        end
+        -- 通过事件系统通知血量回满
+        if owner and owner._dispatchEvent then
+            owner:_dispatchEvent("HealthComponent:onHealthFull", healthComponent)
+        end
+    end
+end
+
 ---@class components.HealthComponent : core.Component
 ---@field maxHealth number 最大血量
 ---@field currentHealth number 当前血量
@@ -87,7 +127,7 @@ local HealthComponentType = TypeDef.create("components.HealthComponent", Compone
             end
 
             local delta = self.currentHealth - oldHealth
-            self:_notifyHealthChanged(oldHealth, self.currentHealth, delta)
+            notifyHealthChanged(self, oldHealth, self.currentHealth, delta)
 
             return actualDamage
         end,
@@ -114,7 +154,7 @@ local HealthComponentType = TypeDef.create("components.HealthComponent", Compone
 
             local delta = self.currentHealth - oldHealth
             if delta ~= 0 then
-                self:_notifyHealthChanged(oldHealth, self.currentHealth, delta)
+                notifyHealthChanged(self, oldHealth, self.currentHealth, delta)
             end
 
             return actualHeal
@@ -126,7 +166,7 @@ local HealthComponentType = TypeDef.create("components.HealthComponent", Compone
                 local oldHealth = self.currentHealth
                 self.currentHealth = self.maxHealth
                 local delta = self.currentHealth - oldHealth
-                self:_notifyHealthChanged(oldHealth, self.currentHealth, delta)
+                notifyHealthChanged(self, oldHealth, self.currentHealth, delta)
             end
         end,
 
@@ -161,41 +201,6 @@ local HealthComponentType = TypeDef.create("components.HealthComponent", Compone
         -- 检查是否满血
         isFullHealth = function(self)
             return self.currentHealth >= self.maxHealth
-        end,
-
-        -- 通知血量变化
-        -- @private
-        _notifyHealthChanged = function(self, oldHealth, newHealth, delta)
-            if self.onHealthChanged then
-                self.onHealthChanged(self, oldHealth, newHealth, delta)
-            end
-
-            -- 通过事件系统通知血量变化
-            if self.owner and self.owner._dispatchEvent then
-                self.owner:_dispatchEvent("HealthComponent:onHealthChanged", self, oldHealth, newHealth, delta)
-            end
-
-            -- 血量耗尽
-            if newHealth <= 0 and oldHealth > 0 then
-                if self.onHealthDepleted then
-                    self.onHealthDepleted(self)
-                end
-                -- 通过事件系统通知血量耗尽
-                if self.owner and self.owner._dispatchEvent then
-                    self.owner:_dispatchEvent("HealthComponent:onHealthDepleted", self)
-                end
-            end
-
-            -- 血量回满
-            if newHealth >= self.maxHealth and oldHealth < self.maxHealth then
-                if self.onHealthFull then
-                    self.onHealthFull(self)
-                end
-                -- 通过事件系统通知血量回满
-                if self.owner and self.owner._dispatchEvent then
-                    self.owner:_dispatchEvent("HealthComponent:onHealthFull", self)
-                end
-            end
         end,
     },
 })

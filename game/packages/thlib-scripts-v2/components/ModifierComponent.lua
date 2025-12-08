@@ -7,6 +7,43 @@ local math = math
 local TypeDef = require("core.TypeDef")
 local ComponentSystem = require("core.ComponentSystem")
 
+---修饰器排序比较函数
+---@param a components.Modifier
+---@param b components.Modifier
+---@return boolean
+local function modifierSortCompare(a, b)
+    return a.order < b.order
+end
+
+---应用单个修饰器操作
+---@param result number 当前结果值
+---@param operation string 操作类型
+---@param value number 操作值
+---@return number 应用后的结果值
+local function applyModifierOperation(result, operation, value)
+    if operation == "add" then
+        return result + value
+    elseif operation == "multiply" then
+        return result * value
+    elseif operation == "power" then
+        if result > 0 then
+            return math.pow(result, value)
+        elseif result < 0 then
+            -- 对于负数，如果 value 是整数，可以计算
+            if value == math.floor(value) then
+                return math.pow(result, value)
+            else
+                -- 非整数次方对负数无意义，保持原值
+                return result
+            end
+        else
+            return result
+        end
+    else
+        return result
+    end
+end
+
 ---@class components.Modifier
 ---@field source string 来源标识
 ---@field operation string 操作类型（"add", "multiply", "power"）
@@ -76,9 +113,7 @@ local ModifierComponentType = TypeDef.create("components.ModifierComponent", Com
             table.insert(self.modifiers[type], modifier)
 
             -- 按 order 排序
-            table.sort(self.modifiers[type], function(a, b)
-                return a.order < b.order
-            end)
+            table.sort(self.modifiers[type], modifierSortCompare)
         end,
 
         -- 移除指定来源的修饰器
@@ -144,28 +179,7 @@ local ModifierComponentType = TypeDef.create("components.ModifierComponent", Com
 
             -- 按顺序应用所有修饰器
             for _, modifier in ipairs(modifierList) do
-                local operation = modifier.operation
-                local value = modifier.value
-
-                if operation == "add" then
-                    -- 加法操作
-                    result = result + value
-                elseif operation == "multiply" then
-                    -- 乘法操作
-                    result = result * value
-                elseif operation == "power" then
-                    -- 次方操作
-                    if result > 0 then
-                        result = math.pow(result, value)
-                    elseif result < 0 then
-                        -- 对于负数，如果 value 是整数，可以计算
-                        if value == math.floor(value) then
-                            result = math.pow(result, value)
-                        else
-                            -- 非整数次方对负数无意义，保持原值
-                        end
-                    end
-                end
+                result = applyModifierOperation(result, modifier.operation, modifier.value)
             end
 
             return result

@@ -4,6 +4,37 @@ local type = type
 local TypeDef = require("core.TypeDef")
 local ComponentSystem = require("core.ComponentSystem")
 
+---构建伤害信息
+---@param damage number 伤害值
+---@param source any|nil 伤害来源
+---@param damageType string|nil 伤害类型
+---@param canBlock boolean|nil 是否可以被阻挡
+---@param data table|nil 自定义数据
+---@return components.DamageInfo
+local function buildDamageInfo(damage, source, damageType, canBlock, data)
+    return {
+        damage = damage,
+        source = source,
+        damageType = damageType,
+        canBlock = canBlock ~= false,
+        data = data or {},
+    }
+end
+
+---应用伤害倍率修饰器
+---@param owner any 拥有者对象
+---@param damage number 原始伤害值
+---@return number 应用修饰后的伤害值
+local function applyDamageModifier(owner, damage)
+    if owner and owner.getComponent then
+        local modifierComp = owner:getComponent("modifier")
+        if modifierComp then
+            return modifierComp:apply("damageDealt", damage)
+        end
+    end
+    return damage
+end
+
 ---@class components.DamageInfo
 ---@field damage number 伤害值
 ---@field source any|nil 伤害来源
@@ -52,30 +83,12 @@ local DamageComponentType = TypeDef.create("components.DamageComponent", Compone
 
             if type(damage) == "number" then
                 -- 应用伤害倍率（通过ModifierComponent）
-                local finalDamage = damage
-                if self.owner and self.owner.getComponent then
-                    local modifierComp = self.owner:getComponent("modifier")
-                    if modifierComp then
-                        finalDamage = modifierComp:apply("damageDealt", finalDamage)
-                    end
-                end
-
-                damageInfo = {
-                    damage = finalDamage,
-                    source = source or self.owner,
-                    damageType = damageType,
-                    canBlock = true,
-                    data = {},
-                }
+                local finalDamage = applyDamageModifier(self.owner, damage)
+                damageInfo = buildDamageInfo(finalDamage, source or self.owner, damageType, true, {})
             else
                 damageInfo = damage
                 -- 应用伤害倍率
-                if self.owner and self.owner.getComponent then
-                    local modifierComp = self.owner:getComponent("modifier")
-                    if modifierComp then
-                        damageInfo.damage = modifierComp:apply("damageDealt", damageInfo.damage)
-                    end
-                end
+                damageInfo.damage = applyDamageModifier(self.owner, damageInfo.damage)
                 -- 如果没有指定source，使用self.owner
                 if not damageInfo.source then
                     damageInfo.source = self.owner
@@ -102,21 +115,8 @@ local DamageComponentType = TypeDef.create("components.DamageComponent", Compone
         -- 创建伤害信息（辅助方法）
         createDamageInfo = function(self, damage, source, damageType, canBlock, data)
             -- 应用伤害倍率
-            local finalDamage = damage
-            if self.owner and self.owner.getComponent then
-                local modifierComp = self.owner:getComponent("modifier")
-                if modifierComp then
-                    finalDamage = modifierComp:apply("damageDealt", finalDamage)
-                end
-            end
-
-            return {
-                damage = finalDamage,
-                source = source or self.owner,
-                damageType = damageType,
-                canBlock = canBlock ~= false,
-                data = data or {},
-            }
+            local finalDamage = applyDamageModifier(self.owner, damage)
+            return buildDamageInfo(finalDamage, source or self.owner, damageType, canBlock, data)
         end,
 
         -- 设置基础伤害值
