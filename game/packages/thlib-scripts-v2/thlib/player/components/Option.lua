@@ -8,7 +8,7 @@ local TypeDef = require("core.TypeDef")
 ---@class thlib.Player.OptionConfig
 ---@field requiredPower number|nil 需要的火力等级（默认为 index-1）
 ---@field lerpSpeed number|nil 位置插值速度（默认 0.3）
----@field alphaLerpSpeed number|nil 透明度插值速度（默认 0.1）
+---@field alphaLerpSpeed number|nil 透明度插值速度（默认 1）
 ---@field image string|nil 子机图像
 ---@field color table|userdata|function|nil 颜色（table: {a,r,g,b}, Color对象, 或返回颜色的函数）
 ---@field scaleX number|nil 水平缩放（默认 1.0）
@@ -70,7 +70,7 @@ local OptionType = TypeDef.create("thlib.Player.Option", nil, {
         powerComp = nil,
         customData = {},
         lerpSpeed = 0.3,
-        alphaLerpSpeed = 0.1,
+        alphaLerpSpeed = 1,
         requiredPower = 0,
         image = nil,
         color = nil,
@@ -127,14 +127,11 @@ local OptionType = TypeDef.create("thlib.Player.Option", nil, {
                 self.shootTimer = self.shootTimer - 1
             end
 
-            -- 直接设置透明度和可见性
-            if self.active then
-                self.alpha = 1.0
-                self.visible = true
-            else
-                self.alpha = 0
-                self.visible = false
-            end
+            -- 使用插值过渡透明度
+            local targetAlpha = self.active and 1.0 or 0.0
+            self.alpha = self.alpha + (targetAlpha - self.alpha) * self.alphaLerpSpeed
+            -- 根据透明度判断可见性
+            self.visible = self.alpha > 0
 
             -- 更新图像旋转角度
             self.rot = self.rot + self.omega
@@ -288,7 +285,7 @@ local function new(owner, index, config)
         powerComp = nil,
         customData = {},
         lerpSpeed = config.lerpSpeed or 0.3,
-        alphaLerpSpeed = config.alphaLerpSpeed or 0.1,
+        alphaLerpSpeed = config.alphaLerpSpeed or 1,
         requiredPower = config.requiredPower or (index - 1),
         image = config.image,
         color = config.color or Color(255, 255, 255, 255),

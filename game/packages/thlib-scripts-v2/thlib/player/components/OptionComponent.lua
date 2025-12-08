@@ -44,7 +44,7 @@ local OptionComponentType = TypeDef.create("thlib.Player.OptionComponent", Compo
                     local support = self.powerComp:getSupport()
                     option.active = (support >= option.requiredPower)
                     option.alpha = option.active and 1.0 or 0
-                    option.visible = option.active
+                    option.visible = option.alpha > 0
                 end
 
                 -- 调用子机的 Start 生命周期（第一次调用时）
