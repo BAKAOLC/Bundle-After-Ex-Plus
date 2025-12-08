@@ -40,6 +40,10 @@ local StateComponentType = TypeDef.create("thlib.Player.StateComponent", Compone
                 self.stateTimers[self.currentState] = 0
                 p.hide = false
                 p.locked = false
+                local healthComp = p:getComponent("health")
+                if healthComp then
+                    healthComp:setHealth(1)
+                end
             end)
 
             player:registerEvent("PlayerState:onStateEnter_deathSpell", "state_deathSpell", 10, function(p)
