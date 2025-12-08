@@ -18,9 +18,7 @@ local TypeDef = require("core.TypeDef")
 ---@field omega number|nil 每帧旋转角度（默认 0）
 ---@field angle number|function|nil 发射角度（供射击使用，数值或返回角度的函数）
 ---@field getTargetOffset fun(option: thlib.Player.Option): number, number|nil 获取目标偏移量函数，返回 offsetX, offsetY
----@field customRender fun(option: thlib.Player.Option)|nil 自定义渲染函数
 ---@field onAwake fun(option: thlib.Player.Option)|nil Awake 生命周期回调
----@field onInit fun(option: thlib.Player.Option)|nil 初始化回调（向后兼容，等同于 onAwake）
 ---@field onStart fun(option: thlib.Player.Option)|nil Start 生命周期回调
 ---@field onUpdate fun(option: thlib.Player.Option)|nil Update 生命周期回调
 ---@field onLateUpdate fun(option: thlib.Player.Option)|nil LateUpdate 生命周期回调
@@ -54,7 +52,6 @@ local TypeDef = require("core.TypeDef")
 ---@field scaleY number 垂直缩放
 ---@field blendMode string 混合模式
 ---@field getTargetOffset fun(option: thlib.Player.Option): number, number|nil 获取目标偏移量函数
----@field customRender fun(option: thlib.Player.Option)|nil 自定义渲染函数
 
 -- 定义 Option 类型
 local OptionType = TypeDef.create("thlib.Player.Option", nil, {
@@ -81,7 +78,6 @@ local OptionType = TypeDef.create("thlib.Player.Option", nil, {
         scaleY = 1.0,
         blendMode = "",
         getTargetOffset = nil,
-        customRender = nil,
         shootInterval = nil,
         shootTimer = 0,
     },
@@ -91,11 +87,8 @@ local OptionType = TypeDef.create("thlib.Player.Option", nil, {
         end,
 
         Awake = function(self)
-            -- 调用配置中的 Awake 回调（向后兼容：也支持 onInit）
             if self.config.onAwake then
                 self.config.onAwake(self)
-            elseif self.config.onInit then
-                self.config.onInit(self)
             end
         end,
 
@@ -182,12 +175,6 @@ local OptionType = TypeDef.create("thlib.Player.Option", nil, {
                 return
             end
 
-            -- 使用自定义渲染函数（向后兼容）
-            if self.customRender then
-                self.customRender(self)
-                return
-            end
-
             -- 确定使用的图像
             if not self.image then
                 return
@@ -241,7 +228,6 @@ local OptionType = TypeDef.create("thlib.Player.Option", nil, {
             self.powerComp = nil
             self.config = nil
             self.getTargetOffset = nil
-            self.customRender = nil
         end,
 
         getAngle = function(self)
@@ -310,7 +296,6 @@ local function new(owner, index, config)
         scaleY = config.scaleY or 1.0,
         blendMode = config.blendMode or "",
         getTargetOffset = config.getTargetOffset,
-        customRender = config.customRender,
         shootInterval = config.shootInterval,
         shootTimer = 0,
         _lifecycleStarted = false, -- 标记 Start 是否已调用
@@ -377,7 +362,6 @@ local function createFixedOption(image, angle, positions, extraConfig)
             return 0, 0
         end,
         onAwake = extraConfig.onAwake,
-        onInit = extraConfig.onInit,
         onStart = extraConfig.onStart,
         onUpdate = extraConfig.onUpdate,
         onLateUpdate = extraConfig.onLateUpdate,
@@ -423,7 +407,6 @@ local function createOrbitOption(image, radius, initialAngle, angularSpeed, extr
             return r * math.cos(math.rad(angle)), r * math.sin(math.rad(angle))
         end,
         onAwake = extraConfig.onAwake,
-        onInit = extraConfig.onInit,
         onStart = extraConfig.onStart,
         onUpdate = extraConfig.onUpdate,
         onLateUpdate = extraConfig.onLateUpdate,
